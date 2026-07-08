@@ -33,7 +33,7 @@ Regra critica do negocio: varias pessoas podem se cadastrar no mesmo dia, mas **
    - O codigo NUNCA sai na resposta publica: fica escondido no banco
 5. WhatsApp abre com os dados + numero da reserva (#XXXXXXXX).
 6. Cliente paga o PIX na conversa.
-7. Dona abre o PAINEL /admin no site (token de acesso), ve o cadastro
+7. Dona faz login no PAINEL /admin (usuario e senha), ve o cadastro
    pendente com o codigo, copia e envia ao cliente pelo WhatsApp.
 8. Cliente volta ao site e digita o codigo no painel de resumo.
 9. Front chama POST /api/reservations/confirm { reserva_id, codigo }:
@@ -57,8 +57,8 @@ Regra critica do negocio: varias pessoas podem se cadastrar no mesmo dia, mas **
 ## Painel admin (`/admin` no site)
 
 - Rota escondida do front (sem link no menu): `https://dominio.com/admin`.
-- Pede o **token de acesso** (o mesmo `ADMIN_TOKEN` do `.env` da API).
-- O token vive **somente em memoria**: recarregar, fechar a aba ou clicar em "Sair" exige digitar de novo. Nada fica salvo no navegador.
+- Login por **usuario + senha** (`POST /admin/login`), que devolve um token de sessao (12h).
+- O token de sessao vive **somente em memoria**: recarregar, fechar a aba ou clicar em "Sair" exige logar de novo. Nada fica salvo no navegador. O cabecalho mostra "Logado como <usuario>".
 - Mostra:
   - **Aguardando PIX**: nome, WhatsApp, sala/horario, plano, tempo restante do lock, numero da reserva (#XXXXXXXX) e o **codigo de confirmacao** com botao Copiar. Botoes por cadastro: **Confirmar manualmente** (plano B), **Editar** e **Recusar**.
   - **Cadastros do dia (planilha)**: tabela com horario, sala, cliente, WhatsApp, plano e status. Navegacao por dia (setas, campo de data e botao "Hoje"); dia sem cadastro fica vazio. Linhas ativas tem acoes de editar/cancelar.
@@ -69,31 +69,31 @@ Regra critica do negocio: varias pessoas podem se cadastrar no mesmo dia, mas **
   - **Confirmar manualmente**: confirma sem codigo (cliente perdeu acesso ao aparelho).
   - Todas pedem confirmacao antes e tem trava contra clique duplo.
 - Atualiza sozinho a cada 15 segundos.
-- Token errado -> API responde 401 e o painel volta para a tela de senha.
+- Login/sessao invalida -> API responde 401 e o painel volta para a tela de login.
 
-## Tokens e credenciais (o que cada um precisa saber)
+## Credenciais (o que cada um precisa saber)
 
 | Quem | O que precisa | Onde |
 |---|---|---|
-| Cliente final | Nada de token. So o codigo de 6 digitos que recebe no WhatsApp apos o PIX | Digita no site |
-| Dona/equipe | `ADMIN_TOKEN` (senha do painel /admin) | Definido no `.env` da API |
-| Dev/deploy | Credenciais MySQL + `ADMIN_TOKEN` | `.env` da API (nunca vai pro front) |
+| Cliente final | Nada de login. So o codigo de 6 digitos que recebe no WhatsApp apos o PIX | Digita no site |
+| Dona/equipe | Usuario + senha do painel /admin | Definidos no `.env` da API (`ADMIN_USERNAME` + hash) |
+| Dev/deploy | Credenciais MySQL + `APP_KEY` + `ADMIN_USERNAME`/`ADMIN_PASSWORD_HASH` | `.env` da API (nunca vai pro front) |
 
-Local (desenvolvimento): a senha do painel e `dev-admin-token`, mas o `.env`
-guarda **apenas o hash SHA-256 dela** (`ADMIN_TOKEN_HASH`) — quem ler o arquivo
-nao descobre a senha.
+O painel usa **login nominal**: `POST /admin/login { username, password }` valida a
+credencial e devolve um **token de sessao assinado** (HMAC com `APP_KEY`, valido 12h).
+As demais rotas admin exigem `Authorization: Bearer <token>`.
 
-Producao: criar token forte (32+ caracteres, guardado num gerenciador de senhas)
-e colocar no `.env` **somente o hash**:
+A senha nunca fica em texto no servidor — guarda-se apenas o hash bcrypt
+(`ADMIN_PASSWORD_HASH`). Gerar credenciais:
 
 ```powershell
-C:\ClinicaIdeiaApi\tools\php\php.exe -r "echo hash('sha256', 'SEU-TOKEN-AQUI');"
-# resultado vai em ADMIN_TOKEN_HASH=...
+C:\ClinicaIdeiaApi\tools\php\php.exe -r "echo bin2hex(random_bytes(32));"          # APP_KEY
+C:\ClinicaIdeiaApi\tools\php\php.exe -r "echo password_hash('SUA-SENHA', PASSWORD_DEFAULT);"  # ADMIN_PASSWORD_HASH
 ```
 
-Regras: com `ADMIN_TOKEN_HASH` presente, `ADMIN_TOKEN` e ignorado; hash malformado
-= ninguem entra (falha fechado); modo texto puro ainda existe como fallback, mas
-tokens fracos/placeholder sao recusados em producao.
+Sem `APP_KEY` o login fica desabilitado (falha fechado). Login errado -> 401, com
+lockout por IP (10 tentativas / 15 min -> 429). Cada login e cada acao sobre dados
+de paciente ficam registrados em `audit_log`.
 
 ## Linguagens e tecnologias
 
@@ -123,10 +123,14 @@ DB_USERNAME=clinica_api
 DB_PASSWORD=clinica_api_dev
 DB_CHARSET=utf8mb4
 CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-# senha do painel (dev): dev-admin-token — abaixo somente o hash dela
-ADMIN_TOKEN_HASH=1734d503f6aa6a047c36d113cbad769f719c93784b469b771c4c3e7c63adbefd
+APP_KEY=<segredo aleatorio para assinar o token de sessao>
+ADMIN_USERNAME=Nilza
+ADMIN_PASSWORD_HASH=<hash bcrypt da senha do painel>
 LOCK_TTL_MINUTES=30
 ```
+
+Obs: o antigo `ADMIN_TOKEN`/`ADMIN_TOKEN_HASH` (token compartilhado) foi aposentado
+em favor do login nominal (`ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` + `APP_KEY`).
 
 Obs: `LOCK_TTL_MINUTES` subiu de 10 para **30** (tempo real de conversa + PIX + codigo).
 
@@ -137,6 +141,7 @@ Obs: `LOCK_TTL_MINUTES` subiu de 10 para **30** (tempo real de conversa + PIX + 
 002_add_reservas.sql    (legado) tabela reservas
 003_add_confirm_code.sql  confirm_code CHAR(6) + confirm_attempts em reservas
 004_add_created_ip.sql    created_ip VARCHAR(45) + indice (rate limit por IP)
+005_add_audit_log.sql     audit_log (trilha de auditoria do painel)
 ```
 
 ## Tabelas principais
@@ -158,6 +163,12 @@ Cadastro completo criado no lock. Campos novos:
 
 Status: `lock_temporario` | `confirmada` | `cancelada` | `expirada`.
 
+### `audit_log`
+Trilha de auditoria do painel (LGPD): `username`, `action`, `entity`, `entity_id`,
+`meta` (JSON), `ip`, `created_at`. Registra login (sucesso/falha) e cada acao da
+equipe sobre reservas/slots (confirmar, cancelar, editar, bloquear, gerar). Leituras
+do painel nao sao auditadas (evita ruido do refresh de 15s). Consulta por SQL.
+
 ## Endpoints
 
 ### Publicos
@@ -174,7 +185,13 @@ POST /api/reservations/confirm
      -> confirma a reserva se o codigo bater
 ```
 
-### Admin (header `X-Admin-Token` obrigatorio)
+### Autenticacao do painel
+
+```text
+POST /api/admin/login   { username, password }  ->  { token, username, expires_at }
+```
+
+### Admin (header `Authorization: Bearer <token de sessao>` obrigatorio)
 
 ```text
 GET  /api/admin/reservations           pendentes (com codigo) + historico
@@ -205,29 +222,30 @@ Locks expirados voltam a `livre` automaticamente a cada consulta (`cleanupExpire
 
 ## Seguranca implementada
 
-- **SQL injection**: impossivel — 100% prepared statements.
+- **SQL injection**: impossivel — 100% prepared statements (`EMULATE_PREPARES=false`).
 - **XSS**: React escapa toda saida; nenhum `dangerouslySetInnerHTML`.
-- **CSRF**: nao aplicavel — sem cookies; token vai em header custom.
-- **Timing attack** no token: `hash_equals`.
-- **Forca bruta no token admin**: atraso de ~350ms a cada erro 401.
-- **Forca bruta no codigo**: 5 tentativas por reserva -> 429.
-- **Token fraco em producao**: API recusa token vazio, placeholder (`troque-este-token`) ou com menos de 16 caracteres quando `APP_ENV=production` (falha fechado).
-- **Senha do painel nao fica em texto no servidor**: o `.env` guarda apenas o hash SHA-256 (`ADMIN_TOKEN_HASH`); mesmo quem ler o arquivo nao descobre o token.
-- **Rate limit de pre-reservas**: maximo **3 locks ativos por IP** -> 429 (impede travar a agenda inteira).
-- **Segredos fora do front**: bundle verificado — nenhum token/senha no JavaScript do site. O token admin so existe no `.env` do servidor.
-- **`.htaccess` blindado**: nega acesso direto a `/src`, `/database`, `/storage`, `/tools`, `/docs` e dotfiles (`.env`); headers `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`.
-- **Respostas da API**: `Cache-Control: no-store` + `nosniff` (nada de codigo em cache).
-- **Painel admin**: token nunca persiste no navegador (somente memoria).
+- **Autenticacao**: login nominal usuario+senha (bcrypt), token de sessao assinado (HMAC/`APP_KEY`, 12h). Sem `APP_KEY`, login desabilitado (falha fechado).
+- **Auditoria (LGPD)**: `audit_log` registra login e acoes da equipe sobre dados de paciente.
+- **Timing attack**: `hash_equals` no login e no codigo.
+- **Forca bruta**: lockout por IP de 10 tentativas / 15 min (429) no login/admin + atraso de ~350ms por 401; codigo de confirmacao: 5 tentativas por reserva.
+- **CORS fail-closed**: sem `*`; so libera origens da allowlist (`CORS_ALLOWED_ORIGINS`).
+- **Erros**: stack trace so vai para `storage/logs/app-errors.log`; cliente so recebe detalhes com `APP_ENV=local`.
+- **Rate limit de pre-reservas**: maximo **3 locks ativos por IP** -> 429.
+- **Segredos fora do front**: bundle verificado — nenhuma chave/senha no JavaScript. So existe `VITE_API_BASE_URL`.
+- **`.htaccess` blindado**: forca HTTPS + HSTS, `Permissions-Policy`; nega acesso a `.mysql-data/`, `.git/`, `config/`, `src/`, `database/`, `storage/`, `tools/`, `docs/` e dotfiles; headers `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`.
+- **Respostas da API**: `Cache-Control: no-store` + `nosniff`.
+- **Painel admin**: token de sessao nunca persiste no navegador (somente memoria).
 - IDs publicos em UUID (nao enumeraveis).
 
 ### Checklist de deploy (Hostinger)
 
 1. HTTPS ativo (certificado gratis da Hostinger).
-2. Criar token forte (32+ caracteres) e colocar no `.env` apenas o `ADMIN_TOKEN_HASH` (SHA-256).
-3. `APP_DEBUG=false`.
+2. `APP_ENV=production`, `APP_DEBUG=false`.
+3. Gerar `APP_KEY` novo + definir `ADMIN_USERNAME` e `ADMIN_PASSWORD_HASH` (bcrypt) no `.env`.
 4. `CORS_ALLOWED_ORIGINS` com o dominio real (sem `*`).
 5. Banco/usuario/senha proprios de producao.
-6. Importar migracoes 001 -> 004 na ordem.
+6. Importar migracoes 001 -> 005 na ordem + seed de salas.
+7. Subir so o codigo (nunca `.env`, `.mysql-data/`, `tools/`).
 
 ## Comandos locais
 
@@ -241,9 +259,12 @@ netstat -ano | Select-String -Pattern ':3317'
 # Subir API local (http://127.0.0.1:8091/api/health)
 C:\ClinicaIdeiaApi\tools\php\php.exe -S 127.0.0.1:8091 -t public public/index.php
 
-# Gerar slots (exemplo)
+# Login do painel (obter token de sessao)
+# POST http://127.0.0.1:8091/api/admin/login  { "username": "Nilza", "password": "..." }
+
+# Gerar slots (exemplo) — usa o token do login acima
 # POST http://127.0.0.1:8091/api/admin/slots/generate
-# Header: X-Admin-Token: dev-admin-token
+# Header: Authorization: Bearer <token de sessao>
 # Body: { "sala_id": "sala1", "start_date": "2026-07-08", "end_date": "2026-07-22",
 #         "hours": ["08:00","09:00","10:00","11:00","13:00","14:00","15:00","16:00"] }
 ```
@@ -252,13 +273,11 @@ Front local: `.env` com `VITE_API_BASE_URL=http://127.0.0.1:8091/api` + `npm run
 
 ## Estado atual (2026-07-08)
 
-- Banco `clinica_ideia` com migracoes 001-004 aplicadas.
-- 2 salas ativas, 120 slots gerados por sala (08-22/07).
-- Fluxo testado de ponta a ponta: calendario -> lock -> codigo no painel -> confirmacao no site -> slot vermelho permanente.
-- Rate limit por IP testado (4o lock -> 429).
-- Codigo errado testado (422) e limite de tentativas ativo.
-- Painel /admin completo: token somente em memoria (hash no .env), codigos,
-  planilha do dia com navegacao por data, confirmar manualmente, editar e recusar.
-- Cancelamento testado: slot voltou a `livre` na agenda.
-- Edicao testada: altera apenas os campos enviados (reserva + slot).
-- Deploy fica para depois (aguardando plano VPS) — ver checklist acima.
+- Banco `clinica_ideia` com migracoes 001-005 aplicadas.
+- **Login nominal ativo**: usuario `Nilza`, token de sessao (12h), testado ponta a ponta (HTTP): login OK, rota protegida com Bearer, senha errada/sem token -> 401.
+- **Auditoria** gravando em `audit_log` (login e acoes da equipe).
+- Fluxo de reserva testado: calendario -> lock -> codigo no painel -> confirmacao no site -> slot vermelho permanente.
+- Painel /admin: login usuario+senha, codigos, planilha do dia, confirmar manualmente, editar e recusar.
+- Front responsivo com menu hamburger no celular; sem estouro horizontal (medido a 390px).
+- Codigo em dois repositorios GitHub: `ClinicaPsicoApi` e `FrontSitePsico` (branches `main`/`developer`).
+- **Deploy ainda nao feito**: falta `.env` de producao (APP_KEY/credenciais), importar migracoes na Hostinger, `VITE_API_BASE_URL=/api` no build e o `.htaccess` de SPA do front — ver checklist acima.

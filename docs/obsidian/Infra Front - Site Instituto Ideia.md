@@ -78,11 +78,14 @@ Funções:
 - `getAvailability(salaId, date)` — slots do dia (verde/vermelho).
 - `lockSlot(payload)` — trava o horário por 30 min e cria a reserva.
 - `confirmReservation(reservaId, codigo)` — confirma com o código de 6 dígitos.
-- `getAdminReservations(adminToken)` — lista pendentes (com código) + histórico.
-- `getAdminDayReservations(adminToken, date)` — cadastros de um dia (planilha).
-- `adminConfirmReservation(adminToken, reservaId)` — confirmação manual.
-- `adminCancelReservation(adminToken, reservaId)` — cancela/recusa (libera o horário).
-- `adminUpdateReservation(adminToken, reservaId, changes)` — edita nome/WhatsApp/plano.
+- `adminLogin(username, password)` — faz login no painel; retorna `{ token, username, expires_at }`.
+- `getAdminReservations(token)` — lista pendentes (com código) + histórico.
+- `getAdminDayReservations(token, date)` — cadastros de um dia (planilha).
+- `adminConfirmReservation(token, reservaId)` — confirmação manual.
+- `adminCancelReservation(token, reservaId)` — cancela/recusa (libera o horário).
+- `adminUpdateReservation(token, reservaId, changes)` — edita nome/WhatsApp/plano.
+
+As funções admin enviam o token de sessão no header `Authorization: Bearer <token>`.
 
 ## Calendário (`AgendaCalendar.tsx`)
 
@@ -107,18 +110,20 @@ Funções:
 
 Detalhes:
 
-- A reserva pendente fica salva no `localStorage` (`ideia-reserva-pendente`):
-  se a pessoa fechar o site para ir ao WhatsApp e voltar, o campo de código continua lá.
+- A reserva pendente fica salva no `sessionStorage` (`ideia-reserva-pendente`):
+  se a pessoa trocar de aba para o WhatsApp e voltar, o campo de código continua lá.
+  Some ao fechar a aba, e o `lock_token` NÃO é persistido (reduz exposição a XSS).
 - Conflito de horário (outra pessoa travou antes) -> mensagem clara + agenda recarregada.
 - Código errado/expirado -> mensagem de erro da API exibida no painel.
 
 ## Painel Admin (`AdminPage.tsx`)
 
 - URL: `/admin` (sem link em lugar nenhum do site).
-- Login: campo de senha que valida o `ADMIN_TOKEN` contra a API (erro -> 401).
-- **Segurança: o token vive somente em memória.** Recarregar, fechar a aba,
-  navegar para fora ou clicar em "Sair" exige digitar o token de novo.
-  Nada é salvo no navegador.
+- Login: **usuário + senha** (`POST /admin/login` na API); erro -> 401. O cabeçalho
+  mostra "Logado como <usuário>".
+- **Segurança: o token de sessão vive somente em memória.** Recarregar, fechar a aba,
+  navegar para fora ou clicar em "Sair" exige logar de novo. Nada é salvo no navegador;
+  sessão expirada (12h) volta para a tela de login.
 - Mostra:
   - **Aguardando PIX**: cliente, WhatsApp, sala/horário, plano, tempo restante,
     nº da reserva e o **código de confirmação** em destaque com botão Copiar.
@@ -164,13 +169,15 @@ no painel admin — serve para a equipe achar o cadastro certo.
 
 ## Segurança do Front
 
-- **Nenhum segredo no bundle**: verificado — token admin e senhas de banco
-  nunca aparecem no JavaScript do site. Só existe `VITE_API_BASE_URL`.
-- Token admin: digitado pela equipe, mantido só em memória, enviado por header.
+- **Nenhum segredo no bundle**: verificado — senhas e chaves nunca aparecem no
+  JavaScript do site. Só existe `VITE_API_BASE_URL`.
+- Login: usuário + senha validados na API; o token de sessão fica só em memória e
+  é enviado no header `Authorization: Bearer`.
+- Reserva pendente em `sessionStorage` sem o `lock_token` (menor exposição a XSS).
 - O código de confirmação nunca chega ao front antes da hora: a API não o
   retorna na resposta pública do lock.
 - React escapa todo conteúdo (sem XSS); links externos com `noopener,noreferrer`.
-- A rota `/admin` escondida NÃO é a proteção — a proteção real é o token
+- A rota `/admin` escondida NÃO é a proteção — a proteção real é o login
   validado no servidor a cada requisição.
 
 ## Experiência Visual
@@ -178,6 +185,10 @@ no painel admin — serve para a equipe achar o cadastro certo.
 Hero com lâmpada interativa (corda clicável liga/apaga a página) —
 `HeroSection.tsx`, estado em `HomePage.tsx`. Identidade: azul `#1A3E8B`,
 navy `#0F2657`, amarelo `#FFC20E`, fontes Fredoka + Nunito Sans.
+
+Responsivo (mobile-first Tailwind): sem estouro horizontal no celular e o
+cabeçalho (`Header.tsx`) tem **menu hamburger** que abre os links de navegação
+em telas pequenas (some no desktop).
 
 ## Comandos
 
@@ -197,17 +208,17 @@ Dependência local: API rodando em `http://127.0.0.1:8091` (ver doc da API).
 - Hostinger: front em `public_html/`, API em `public_html/api/`,
   com `VITE_API_BASE_URL=/api` no build.
 - SPA: configurar fallback de rotas para `index.html`
-  (senão `/admin` dá 404 ao acessar direto).
-- HTTPS obrigatório (token admin trafega em header).
+  (senão `/admin` dá 404 ao acessar direto). **Ainda pendente** — criar `.htaccess` do front.
+- HTTPS obrigatório (token de sessão trafega em header).
 
 ## Riscos Atuais
 
 | Risco | Impacto | Mitigação |
 |---|---|---|
 | Lock expira antes do PIX (30 min) | Médio | Cliente cadastra de novo; TTL ajustável no .env da API |
-| Cliente fecha o site e perde o resumo | Baixo | Reserva pendente restaurada via localStorage |
+| Cliente troca de aba e perde o resumo | Baixo | Reserva pendente restaurada via sessionStorage |
 | Alguém tentar adivinhar o código | Baixo | 5 tentativas por reserva -> bloqueio (API) |
-| Equipe esquecer token forte no deploy | Alto | API recusa token fraco em produção (falha fechado) |
+| Esquecer `APP_KEY`/credenciais no deploy | Alto | Sem `APP_KEY` o login fica desabilitado (falha fechado); senha só em hash bcrypt |
 
 ## Próximos Passos
 
