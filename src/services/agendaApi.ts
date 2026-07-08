@@ -90,9 +90,28 @@ export async function confirmReservation(reservaId: string, codigo: string): Pro
   });
 }
 
+export interface AdminSession {
+  token: string;
+  username: string;
+  expires_at: string;
+}
+
+export async function adminLogin(username: string, password: string): Promise<AdminSession> {
+  const response = await apiFetch<ApiResponse<AdminSession>>('/admin/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (!response.data) {
+    throw new Error('A API não retornou os dados da sessão.');
+  }
+
+  return response.data;
+}
+
 export async function getAdminReservations(adminToken: string): Promise<{ pending: AdminReservation[]; recent: AdminReservation[] }> {
   const response = await apiFetch<ApiResponse<{ pending: AdminReservation[]; recent: AdminReservation[] }>>('/admin/reservations', {
-    headers: { 'X-Admin-Token': adminToken },
+    headers: { Authorization: `Bearer ${adminToken}` },
   });
 
   return {
@@ -103,7 +122,7 @@ export async function getAdminReservations(adminToken: string): Promise<{ pendin
 
 export async function getAdminDayReservations(adminToken: string, date: string): Promise<AdminReservation[]> {
   const response = await apiFetch<ApiResponse<{ reservations: AdminReservation[] }>>(`/admin/reservations/day?date=${encodeURIComponent(date)}`, {
-    headers: { 'X-Admin-Token': adminToken },
+    headers: { Authorization: `Bearer ${adminToken}` },
   });
 
   return response.data?.reservations ?? [];
@@ -112,7 +131,7 @@ export async function getAdminDayReservations(adminToken: string, date: string):
 export async function adminConfirmReservation(adminToken: string, reservaId: string): Promise<void> {
   await apiFetch<ApiResponse<{ confirmed: boolean }>>('/admin/reservations/confirm-by-id', {
     method: 'POST',
-    headers: { 'X-Admin-Token': adminToken },
+    headers: { Authorization: `Bearer ${adminToken}` },
     body: JSON.stringify({ reserva_id: reservaId }),
   });
 }
@@ -120,7 +139,7 @@ export async function adminConfirmReservation(adminToken: string, reservaId: str
 export async function adminCancelReservation(adminToken: string, reservaId: string): Promise<void> {
   await apiFetch<ApiResponse<{ cancelled: boolean }>>('/admin/reservations/cancel', {
     method: 'POST',
-    headers: { 'X-Admin-Token': adminToken },
+    headers: { Authorization: `Bearer ${adminToken}` },
     body: JSON.stringify({ reserva_id: reservaId }),
   });
 }
@@ -134,7 +153,7 @@ export interface AdminReservationUpdate {
 export async function adminUpdateReservation(adminToken: string, reservaId: string, changes: AdminReservationUpdate): Promise<void> {
   await apiFetch<ApiResponse<{ updated: boolean }>>('/admin/reservations/update', {
     method: 'POST',
-    headers: { 'X-Admin-Token': adminToken },
+    headers: { Authorization: `Bearer ${adminToken}` },
     body: JSON.stringify({ reserva_id: reservaId, ...changes }),
   });
 }
