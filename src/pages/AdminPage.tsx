@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import { CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, ShieldCheck, X } from 'lucide-react';
-import { type AdminReservation, type AdminReservationUpdate, adminCancelReservation, adminConfirmReservation, adminUpdateReservation, getAdminDayReservations, getAdminReservations } from '../services/agendaApi';
+import { type AdminReservation, type AdminReservationUpdate, adminCancelReservation, adminConfirmReservation, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminReservations } from '../services/agendaApi';
 import { shortReservaId } from '../services/whatsappService';
 import { planosDisponiveis } from '../features/agendamento/data/rooms';
 import { useClipboard } from '../hooks/useClipboard';
@@ -15,9 +15,11 @@ interface AdminData {
 }
 
 export function AdminPage() {
-  // O token vive somente em memoria: sair da pagina, recarregar ou fechar a aba exige digitar de novo.
+  // O token de sessao vive somente em memoria: sair, recarregar ou fechar a aba exige logar de novo.
   const [token, setToken] = useState<string | null>(null);
-  const [tokenInput, setTokenInput] = useState('');
+  const [username, setUsername] = useState<string | null>(null);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loggingIn, setLoggingIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,8 +49,9 @@ export function AdminPage() {
 
       if (message.toLowerCase().includes('autorizado')) {
         setToken(null);
+        setUsername(null);
         setData(null);
-        setAuthError('Token inválido. Tente novamente.');
+        setAuthError('Sessão expirada. Entre novamente.');
       } else {
         setLoadError(message);
       }
@@ -68,21 +71,33 @@ export function AdminPage() {
     return () => window.clearInterval(intervalId);
   }, [token, selectedDate, load]);
 
-  function submitToken(event: FormEvent<HTMLFormElement>) {
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const value = tokenInput.trim();
+    const user = loginForm.username.trim();
+    const pass = loginForm.password;
 
-    if (!value) {
+    if (!user || !pass) {
       return;
     }
 
+    setLoggingIn(true);
     setAuthError(null);
-    setToken(value);
-    setTokenInput('');
+
+    try {
+      const session = await adminLogin(user, pass);
+      setToken(session.token);
+      setUsername(session.username);
+      setLoginForm({ username: '', password: '' });
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Não foi possível entrar.');
+    } finally {
+      setLoggingIn(false);
+    }
   }
 
   function logout() {
     setToken(null);
+    setUsername(null);
     setData(null);
     setDayReservations(null);
   }
@@ -188,21 +203,29 @@ export function AdminPage() {
   if (!token) {
     return (
       <div className="grid min-h-screen place-items-center bg-brand-bg px-5 text-ink antialiased">
-        <form onSubmit={submitToken} className="w-full max-w-sm rounded-3xl border border-brand-blue/15 bg-white p-8 shadow-hero">
+        <form onSubmit={submitLogin} className="w-full max-w-sm rounded-3xl border border-brand-blue/15 bg-white p-8 shadow-hero">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-navy text-brand-yellow"><KeyRound size={26} /></div>
           <h1 className="mt-5 text-center font-display text-2xl font-semibold">Painel Instituto Ideia</h1>
-          <p className="mt-2 text-center text-sm text-slate-600">Área restrita da equipe. Informe o token de acesso.</p>
+          <p className="mt-2 text-center text-sm text-slate-600">Área restrita da equipe. Entre com seu usuário e senha.</p>
           <input
-            type="password"
-            value={tokenInput}
-            onChange={(event) => setTokenInput(event.target.value)}
-            placeholder="Token de acesso"
-            autoComplete="off"
+            type="text"
+            value={loginForm.username}
+            onChange={(event) => setLoginForm((current) => ({ ...current, username: event.target.value }))}
+            placeholder="Usuário"
+            autoComplete="username"
             autoFocus
             className="mt-6 w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white"
           />
+          <input
+            type="password"
+            value={loginForm.password}
+            onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))}
+            placeholder="Senha"
+            autoComplete="current-password"
+            className="mt-3 w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white"
+          />
           {authError ? <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">{authError}</p> : null}
-          <button type="submit" className="mt-4 w-full rounded-xl bg-brand-blue px-4 py-3 font-extrabold text-white shadow-brand transition hover:-translate-y-0.5">Entrar</button>
+          <button type="submit" disabled={loggingIn} className="mt-4 w-full rounded-xl bg-brand-blue px-4 py-3 font-extrabold text-white shadow-brand transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{loggingIn ? 'Entrando...' : 'Entrar'}</button>
         </form>
       </div>
     );
@@ -216,7 +239,7 @@ export function AdminPage() {
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-navy text-brand-yellow"><ShieldCheck size={22} /></div>
             <div>
               <h1 className="font-display text-2xl font-semibold leading-none">Painel Instituto Ideia</h1>
-              <p className="mt-1 text-xs font-bold text-slate-500">Cadastros e códigos de confirmação · atualiza a cada 15s</p>
+              <p className="mt-1 text-xs font-bold text-slate-500">Logado como {username ?? '—'} · atualiza a cada 15s</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
