@@ -22,7 +22,7 @@ const PENDING_STORAGE_KEY = 'ideia-reserva-pendente';
 
 function loadPendingSummary(): ResumoAgendamento | null {
   try {
-    const raw = localStorage.getItem(PENDING_STORAGE_KEY);
+    const raw = sessionStorage.getItem(PENDING_STORAGE_KEY);
     if (!raw) {
       return null;
     }
@@ -37,7 +37,7 @@ function loadPendingSummary(): ResumoAgendamento | null {
       const expiresAt = new Date(`${parsed.lockedUntil.replace(' ', 'T')}Z`).getTime();
 
       if (Number.isFinite(expiresAt) && expiresAt < Date.now()) {
-        localStorage.removeItem(PENDING_STORAGE_KEY);
+        sessionStorage.removeItem(PENDING_STORAGE_KEY);
         return null;
       }
     }
@@ -121,7 +121,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
     setCodigo('');
     setConfirmState('idle');
     setConfirmError(null);
-    localStorage.removeItem(PENDING_STORAGE_KEY);
+    sessionStorage.removeItem(PENDING_STORAGE_KEY);
   }
 
   async function confirmWithCode() {
@@ -135,7 +135,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
     try {
       await confirmReservation(summary.reservaId, codigo);
       setConfirmState('done');
-      localStorage.removeItem(PENDING_STORAGE_KEY);
+      sessionStorage.removeItem(PENDING_STORAGE_KEY);
 
       if (data.salaId && data.data) {
         getAvailability(data.salaId, data.data).then(setAgendaSlots).catch(() => undefined);
@@ -193,7 +193,11 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
     setSummary(bookingSummary);
 
     if (bookingSummary.reservaId) {
-      localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(bookingSummary));
+      // Nao persiste o lock_token: ele nao e necessario para a confirmacao por codigo
+      // (que usa reservaId + codigo) e reduz a exposicao caso o storage seja lido via XSS.
+      const persistable: ResumoAgendamento = { ...bookingSummary };
+      delete persistable.lockToken;
+      sessionStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(persistable));
     }
   }
 
