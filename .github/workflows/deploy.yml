@@ -1,0 +1,54 @@
+name: Deploy front (Hostinger)
+
+# Publica o site a cada push na main. O build roda no GitHub (npm run build)
+# e o conteudo de dist/ e enviado por FTPS para a Hostinger.
+# Requer os secrets (Settings -> Secrets and variables -> Actions):
+#   FTP_SERVER       ex.: ftp.seudominio.com.br  (ou o host mostrado no hPanel)
+#   FTP_USERNAME     usuario FTP do hPanel
+#   FTP_PASSWORD     senha do usuario FTP
+#   FTP_SERVER_DIR   pasta do site, com barra no fim. ex.: /public_html/
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-front
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build de producao
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: /api
+
+      - name: Deploy via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          # Nao apaga a subpasta da API nem arquivos do servidor fora do dist
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
