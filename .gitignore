@@ -12,10 +12,11 @@ dist
 dist-ssr
 *.local
 
-# Env (config local / segredos) — mantem apenas o exemplo
+# Env (config local / segredos) — mantem apenas o exemplo e o de producao (so tem /api, sem segredo)
 .env
 .env.*
 !.env.example
+!.env.production
 
 # Ferramentas / agentes locais
 .agents/
