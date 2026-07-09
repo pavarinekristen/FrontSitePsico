@@ -1,5 +1,5 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { Bell, BellOff, BellRing, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
 import { type AdminReservation, type AdminReservationUpdate, adminCancelReservation, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations } from '../services/agendaApi';
 import { shortReservaId } from '../services/whatsappService';
 import { planosDisponiveis } from '../features/agendamento/data/rooms';
@@ -12,6 +12,39 @@ const REFRESH_INTERVAL_MS = 15000;
 interface AdminData {
   pending: AdminReservation[];
   recent: AdminReservation[];
+}
+
+// Toca dois bipes curtos usando o Web Audio (sem arquivo externo). Reaproveita o AudioContext.
+function playNotificationSound(ctxRef: { current: AudioContext | null }): void {
+  try {
+    const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) {
+      return;
+    }
+
+    const ctx = ctxRef.current ?? new AudioCtx();
+    ctxRef.current = ctx;
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
+
+    const start = ctx.currentTime;
+    [0, 0.22].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, start + offset);
+      gain.gain.exponentialRampToValueAtTime(0.35, start + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + offset + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start + offset);
+      osc.stop(start + offset + 0.22);
+    });
+  } catch {
+    /* audio pode estar bloqueado pelo navegador; ignora */
+  }
 }
 
 export function AdminPage() {
@@ -35,6 +68,11 @@ export function AdminPage() {
   const [historySearch, setHistorySearch] = useState('');
   const [selectedHistory, setSelectedHistory] = useState<Set<string>>(new Set());
   const [historyBusy, setHistoryBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [soundOn, setSoundOn] = useState(true);
+  const prevPendingRef = useRef<Set<string> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const soundOnRef = useRef(true);
   const { copiedKey, copy } = useClipboard();
 
   const load = useCallback(async (currentToken: string, date: string) => {
@@ -50,6 +88,29 @@ export function AdminPage() {
       setData(overview);
       setDayReservations(day);
       setHistory(hist);
+
+      // Aviso de nova solicitacao (Aguardando PIX) desde a ultima checagem.
+      const currentPendingIds = new Set(overview.pending.map((reservation) => reservation.reserva_id));
+      const previous = prevPendingRef.current;
+      if (previous !== null) {
+        const novos = overview.pending.filter((reservation) => !previous.has(reservation.reserva_id));
+        if (novos.length > 0) {
+          const nomes = novos.map((reservation) => reservation.cliente_nome || 'Sem nome').join(', ');
+          setToast(novos.length === 1 ? `Nova solicitação de ${nomes}` : `${novos.length} novas solicitações: ${nomes}`);
+          if (soundOnRef.current) {
+            playNotificationSound(audioCtxRef);
+          }
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            try {
+              // eslint-disable-next-line no-new
+              new Notification('Nova solicitação — Instituto Ideia', { body: nomes });
+            } catch {
+              /* ignora */
+            }
+          }
+        }
+      }
+      prevPendingRef.current = currentPendingIds;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao carregar o painel.';
 
@@ -68,6 +129,7 @@ export function AdminPage() {
 
   useEffect(() => {
     if (!token) {
+      prevPendingRef.current = null; // ao deslogar, zera a base pra nao avisar tudo no proximo login
       return;
     }
 
@@ -76,6 +138,18 @@ export function AdminPage() {
 
     return () => window.clearInterval(intervalId);
   }, [token, selectedDate, load]);
+
+  useEffect(() => {
+    soundOnRef.current = soundOn;
+  }, [soundOn]);
+
+  useEffect(() => {
+    const pendentes = data?.pending.length ?? 0;
+    document.title = pendentes > 0 ? `(${pendentes}) Painel Instituto Ideia` : 'Painel Instituto Ideia';
+    return () => {
+      document.title = 'Instituto Ideia | Coworking Psicológico';
+    };
+  }, [data]);
 
   async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,6 +168,20 @@ export function AdminPage() {
       setToken(session.token);
       setUsername(session.username);
       setLoginForm({ username: '', password: '' });
+
+      // O clique de login libera o audio e permite pedir a permissao de notificacao.
+      try {
+        const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          audioCtxRef.current = audioCtxRef.current ?? new AudioCtx();
+          void audioCtxRef.current.resume();
+        }
+      } catch {
+        /* ignora */
+      }
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        void Notification.requestPermission();
+      }
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Não foi possível entrar.');
     } finally {
@@ -311,16 +399,37 @@ export function AdminPage() {
 
   return (
     <div className="min-h-screen bg-brand-bg px-5 py-8 text-ink antialiased md:px-8">
+      {toast ? (
+        <div className="fixed left-1/2 top-4 z-[70] w-[min(92vw,440px)] -translate-x-1/2 rounded-2xl border-2 border-brand-yellow bg-brand-navy px-5 py-4 text-white shadow-hero">
+          <div className="flex items-start gap-3">
+            <BellRing size={22} className="mt-0.5 shrink-0 animate-bounce text-brand-yellow" />
+            <div className="flex-1">
+              <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-brand-yellow">Nova solicitação chegou</div>
+              <div className="mt-0.5 text-sm font-bold leading-snug">{toast}</div>
+            </div>
+            <button type="button" onClick={() => setToast(null)} aria-label="Fechar aviso" className="shrink-0 rounded-full p-1 text-white/70 transition hover:bg-white/10 hover:text-white"><X size={16} /></button>
+          </div>
+        </div>
+      ) : null}
       <div className="mx-auto max-w-4xl">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-navy text-brand-yellow"><ShieldCheck size={22} /></div>
             <div>
               <h1 className="font-display text-2xl font-semibold leading-none">Painel Instituto Ideia</h1>
-              <p className="mt-1 text-xs font-bold text-slate-500">Logado como {username ?? '—'} · atualiza a cada 15s</p>
+              <p className="mt-1 text-xs font-bold text-slate-500">Logado como {username ?? '—'} · atualiza sozinho e avisa quando chega solicitação</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSoundOn((current) => !current)}
+              title={soundOn ? 'Som do aviso ligado (clique para desligar)' : 'Som do aviso desligado (clique para ligar)'}
+              aria-label={soundOn ? 'Desligar som do aviso' : 'Ligar som do aviso'}
+              className={cn('inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition hover:-translate-y-0.5', soundOn ? 'border-brand-blue/20 bg-white text-brand-blue' : 'border-slate-200 bg-slate-100 text-slate-400')}
+            >
+              {soundOn ? <Bell size={15} /> : <BellOff size={15} />}
+            </button>
             <button type="button" onClick={() => void load(token, selectedDate)} className="inline-flex items-center gap-2 rounded-full border border-brand-blue/20 bg-white px-4 py-2.5 text-sm font-extrabold text-brand-blue shadow-sm transition hover:-translate-y-0.5">
               <RefreshCw size={15} className={cn(loading && 'animate-spin')} /> Atualizar
             </button>
