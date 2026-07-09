@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
-import { CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, ShieldCheck, X } from 'lucide-react';
-import { type AdminReservation, type AdminReservationUpdate, adminCancelReservation, adminConfirmReservation, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminReservations } from '../services/agendaApi';
+import { CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
+import { type AdminReservation, type AdminReservationUpdate, adminCancelReservation, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations } from '../services/agendaApi';
 import { shortReservaId } from '../services/whatsappService';
 import { planosDisponiveis } from '../features/agendamento/data/rooms';
 import { useClipboard } from '../hooks/useClipboard';
@@ -31,6 +31,10 @@ export function AdminPage() {
   const [editForm, setEditForm] = useState({ nome: '', whatsapp: '', plano: '' });
   const [editError, setEditError] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [history, setHistory] = useState<AdminReservation[]>([]);
+  const [historySearch, setHistorySearch] = useState('');
+  const [selectedHistory, setSelectedHistory] = useState<Set<string>>(new Set());
+  const [historyBusy, setHistoryBusy] = useState(false);
   const { copiedKey, copy } = useClipboard();
 
   const load = useCallback(async (currentToken: string, date: string) => {
@@ -38,12 +42,14 @@ export function AdminPage() {
     setLoadError(null);
 
     try {
-      const [overview, day] = await Promise.all([
+      const [overview, day, hist] = await Promise.all([
         getAdminReservations(currentToken),
         getAdminDayReservations(currentToken, date),
+        getAdminHistory(currentToken),
       ]);
       setData(overview);
       setDayReservations(day);
+      setHistory(hist);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erro ao carregar o painel.';
 
@@ -200,6 +206,71 @@ export function AdminPage() {
     }
   }
 
+  function toggleHistorySelect(id: string) {
+    setSelectedHistory((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAllHistory(ids: string[]) {
+    setSelectedHistory((current) => {
+      const allSelected = ids.length > 0 && ids.every((id) => current.has(id));
+      return allSelected ? new Set() : new Set(ids);
+    });
+  }
+
+  async function removeHistory(ids: string[], label: string) {
+    if (!token || ids.length === 0 || historyBusy) {
+      return;
+    }
+
+    if (!window.confirm(`Excluir ${label} do histórico?\n\nIsso apaga o registro definitivamente e NÃO tem como desfazer.`)) {
+      return;
+    }
+
+    setHistoryBusy(true);
+    setLoadError(null);
+
+    try {
+      await adminDeleteReservations(token, ids);
+      setSelectedHistory(new Set());
+      await load(token, selectedDate);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Erro ao excluir do histórico.');
+    } finally {
+      setHistoryBusy(false);
+    }
+  }
+
+  async function removeAllHistory() {
+    if (!token || historyBusy) {
+      return;
+    }
+
+    if (!window.confirm('Excluir TODO o histórico?\n\nIsso apaga todos os cadastros finalizados (confirmados, cancelados e expirados) e NÃO tem como desfazer.')) {
+      return;
+    }
+
+    setHistoryBusy(true);
+    setLoadError(null);
+
+    try {
+      await adminDeleteAllHistory(token);
+      setSelectedHistory(new Set());
+      await load(token, selectedDate);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Erro ao limpar o histórico.');
+    } finally {
+      setHistoryBusy(false);
+    }
+  }
+
   if (!token) {
     return (
       <div className="grid min-h-screen place-items-center bg-brand-bg px-5 text-ink antialiased">
@@ -230,6 +301,13 @@ export function AdminPage() {
       </div>
     );
   }
+
+  const historyQuery = historySearch.trim().toLowerCase();
+  const filteredHistory = historyQuery
+    ? history.filter((reservation) => (reservation.cliente_nome ?? '').toLowerCase().includes(historyQuery))
+    : history;
+  const filteredHistoryIds = filteredHistory.map((reservation) => reservation.reserva_id);
+  const allHistorySelected = filteredHistoryIds.length > 0 && filteredHistoryIds.every((id) => selectedHistory.has(id));
 
   return (
     <div className="min-h-screen bg-brand-bg px-5 py-8 text-ink antialiased md:px-8">
@@ -403,32 +481,77 @@ export function AdminPage() {
         </section>
 
         <section className="mt-10">
-          <h2 className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-blue">Histórico recente</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-blue">Histórico</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  value={historySearch}
+                  onChange={(event) => setHistorySearch(event.target.value)}
+                  placeholder="Buscar por nome"
+                  className="w-56 rounded-full border border-brand-blue/20 bg-white py-2 pl-9 pr-4 text-sm font-bold text-ink outline-none transition focus:border-brand-blue"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={selectedHistory.size === 0 || historyBusy}
+                onClick={() => void removeHistory(Array.from(selectedHistory), `${selectedHistory.size} cadastro(s)`)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-extrabold text-red-600 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Trash2 size={14} /> Excluir selecionados{selectedHistory.size > 0 ? ` (${selectedHistory.size})` : ''}
+              </button>
+              <button
+                type="button"
+                disabled={history.length === 0 || historyBusy}
+                onClick={() => void removeAllHistory()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-4 py-2 text-sm font-extrabold text-white shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Trash2 size={14} /> Excluir todos
+              </button>
+            </div>
+          </div>
           <div className="mt-3 overflow-x-auto rounded-2xl border border-brand-blue/15 bg-white shadow-card">
-            <table className="w-full min-w-[560px] text-left text-sm">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-b border-brand-blue/10 text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                  <th className="px-5 py-3">Cliente</th>
-                  <th className="px-5 py-3">Sala · Horário</th>
-                  <th className="px-5 py-3">Plano</th>
-                  <th className="px-5 py-3">Status</th>
+                  <th className="px-4 py-3"><input type="checkbox" checked={allHistorySelected} onChange={() => toggleSelectAllHistory(filteredHistoryIds)} aria-label="Selecionar todos" className="h-4 w-4 accent-brand-blue" /></th>
+                  <th className="px-4 py-3">Cliente</th>
+                  <th className="px-4 py-3">Sala · Horário</th>
+                  <th className="px-4 py-3">Plano</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {data && data.recent.length === 0 ? (
-                  <tr><td colSpan={4} className="px-5 py-6 text-center font-bold text-slate-500">Nenhum registro ainda.</td></tr>
+                {filteredHistory.length === 0 ? (
+                  <tr><td colSpan={6} className="px-5 py-6 text-center font-bold text-slate-500">{history.length === 0 ? 'Nenhum registro ainda.' : 'Nenhum resultado para essa busca.'}</td></tr>
                 ) : null}
-                {data?.recent.map((reservation) => (
-                  <tr key={reservation.reserva_id} className="border-b border-brand-blue/5 last:border-0">
-                    <td className="px-5 py-3 font-bold">{reservation.cliente_nome || 'Sem nome'}</td>
-                    <td className="px-5 py-3 text-slate-600">{reservation.sala_numero} — {formatSlotDateTime(reservation.slot_inicio)}</td>
-                    <td className="px-5 py-3 text-slate-600">{reservation.plano}</td>
-                    <td className="px-5 py-3"><StatusBadge status={reservation.status} /></td>
+                {filteredHistory.map((reservation) => (
+                  <tr key={reservation.reserva_id} className={cn('border-b border-brand-blue/5 last:border-0', selectedHistory.has(reservation.reserva_id) && 'bg-brand-soft/60')}>
+                    <td className="px-4 py-3"><input type="checkbox" checked={selectedHistory.has(reservation.reserva_id)} onChange={() => toggleHistorySelect(reservation.reserva_id)} aria-label={`Selecionar ${reservation.cliente_nome || 'cadastro'}`} className="h-4 w-4 accent-brand-blue" /></td>
+                    <td className="px-4 py-3 font-bold">{reservation.cliente_nome || 'Sem nome'}</td>
+                    <td className="px-4 py-3 text-slate-600">{reservation.sala_numero} — {formatSlotDateTime(reservation.slot_inicio)}</td>
+                    <td className="px-4 py-3 text-slate-600">{reservation.plano}</td>
+                    <td className="px-4 py-3"><StatusBadge status={reservation.status} /></td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        disabled={historyBusy}
+                        onClick={() => void removeHistory([reservation.reserva_id], reservation.cliente_nome || 'este cadastro')}
+                        title="Excluir do histórico"
+                        className="grid h-8 w-8 place-items-center rounded-full border border-red-200 bg-red-50 text-red-600 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {historyBusy ? <p className="mt-2 text-xs font-bold text-slate-500">Processando...</p> : null}
         </section>
       </div>
 

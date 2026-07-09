@@ -150,6 +150,34 @@ export interface AdminReservationUpdate {
   plano?: string;
 }
 
+export async function getAdminHistory(adminToken: string, q?: string): Promise<AdminReservation[]> {
+  const query = q && q.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+  const response = await apiFetch<ApiResponse<{ reservations: AdminReservation[] }>>(`/admin/reservations/history${query}`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+
+  return response.data?.reservations ?? [];
+}
+
+export async function adminDeleteReservations(adminToken: string, reservaIds: string[]): Promise<number> {
+  const response = await apiFetch<ApiResponse<{ deleted: number }>>('/admin/reservations/delete', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: JSON.stringify({ reserva_ids: reservaIds }),
+  });
+
+  return response.data?.deleted ?? 0;
+}
+
+export async function adminDeleteAllHistory(adminToken: string): Promise<number> {
+  const response = await apiFetch<ApiResponse<{ deleted: number }>>('/admin/reservations/delete-all', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+  });
+
+  return response.data?.deleted ?? 0;
+}
+
 export async function adminUpdateReservation(adminToken: string, reservaId: string, changes: AdminReservationUpdate): Promise<void> {
   await apiFetch<ApiResponse<{ updated: boolean }>>('/admin/reservations/update', {
     method: 'POST',
