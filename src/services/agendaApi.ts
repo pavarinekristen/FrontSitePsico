@@ -1,3 +1,5 @@
+import type { RegistroAceite } from '../types';
+
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') || '/api';
 
 export type SlotStatus = 'livre' | 'lock_temporario' | 'confirmada' | 'bloqueada_admin';
@@ -10,23 +12,35 @@ export interface AgendaSlot {
   available: boolean;
   locked_until: string | null;
   seconds_to_unlock: number;
+  cliente_nome?: string | null;
+  cliente_whatsapp?: string | null;
+  cliente_crp?: string | null;
+  publicos_atendidos?: string | null;
+  abordagem_trabalho?: string | null;
 }
 
 export interface LockSlotPayload {
   slotId: string;
+  slotIds?: string[];
   clienteNome: string;
   clienteWhatsapp: string;
   plano: string;
+  clienteCrp: string;
+  publicosAtendidos: string[];
+  abordagemTrabalho: string;
+  aceite?: RegistroAceite;
 }
 
 export interface LockSlotResult {
   reserva_id: string;
   slot_id: string;
+  slot_ids?: string[];
   lock_token: string;
   locked_until: string;
   inicio: string;
   fim: string;
   status: SlotStatus;
+  duration_slots?: number;
   sala: {
     id: string;
     numero: string;
@@ -39,6 +53,9 @@ export interface AdminReservation {
   cliente_nome: string | null;
   cliente_whatsapp: string | null;
   plano: string;
+  cliente_crp: string | null;
+  publicos_atendidos: string | null;
+  abordagem_trabalho: string | null;
   status: string;
   confirm_code?: string | null;
   locked_until?: string | null;
@@ -47,8 +64,17 @@ export interface AdminReservation {
   slot_id: string;
   slot_inicio: string;
   slot_fim: string;
+  duration_slots?: number | string;
+  slot_items?: AdminReservationSlot[];
   sala_numero: string;
   sala_nome: string;
+}
+
+export interface AdminReservationSlot {
+  slot_id: string;
+  slot_inicio: string;
+  slot_fim: string;
+  status: 'ativa' | 'cancelada';
 }
 
 interface ApiResponse<T> {
@@ -70,9 +96,29 @@ export async function lockSlot(payload: LockSlotPayload): Promise<LockSlotResult
     method: 'POST',
     body: JSON.stringify({
       slot_id: payload.slotId,
+      slot_ids: payload.slotIds,
       cliente_nome: payload.clienteNome,
       cliente_whatsapp: payload.clienteWhatsapp,
       plano: payload.plano,
+      cliente_crp: payload.clienteCrp,
+      publicos_atendidos: payload.publicosAtendidos,
+      abordagem_trabalho: payload.abordagemTrabalho,
+      // O IP do titular, se registrado, deve ser coletado pelo backend a partir da
+      // requisicao (REMOTE_ADDR), nunca enviado pelo front.
+      ...(payload.aceite
+        ? {
+            aceite: {
+              aceite_termos: payload.aceite.aceiteTermos,
+              aceite_privacidade: payload.aceite.aceitePrivacidade,
+              versao_termos: payload.aceite.versaoTermos,
+              versao_privacidade: payload.aceite.versaoPrivacidade,
+              data_hora_aceite: payload.aceite.dataHoraAceite,
+              origem_aceite: payload.aceite.origemAceite,
+              texto_aceite: payload.aceite.textoAceite,
+              user_agent: payload.aceite.userAgent,
+            },
+          }
+        : {}),
     }),
   });
 
@@ -144,10 +190,21 @@ export async function adminCancelReservation(adminToken: string, reservaId: stri
   });
 }
 
+export async function adminCancelReservationSlot(adminToken: string, reservaId: string, slotId: string): Promise<void> {
+  await apiFetch<ApiResponse<{ cancelled: boolean }>>('/admin/reservations/cancel-slot', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: JSON.stringify({ reserva_id: reservaId, slot_id: slotId }),
+  });
+}
+
 export interface AdminReservationUpdate {
   cliente_nome?: string;
   cliente_whatsapp?: string;
   plano?: string;
+  cliente_crp?: string;
+  publicos_atendidos?: string[];
+  abordagem_trabalho?: string;
 }
 
 export async function getAdminHistory(adminToken: string, q?: string): Promise<AdminReservation[]> {
@@ -182,7 +239,11 @@ export async function adminUpdateReservation(adminToken: string, reservaId: stri
   await apiFetch<ApiResponse<{ updated: boolean }>>('/admin/reservations/update', {
     method: 'POST',
     headers: { Authorization: `Bearer ${adminToken}` },
-    body: JSON.stringify({ reserva_id: reservaId, ...changes }),
+    body: JSON.stringify({
+      reserva_id: reservaId,
+      ...changes,
+      ...(changes.publicos_atendidos ? { publicos_atendidos: changes.publicos_atendidos } : {}),
+    }),
   });
 }
 
