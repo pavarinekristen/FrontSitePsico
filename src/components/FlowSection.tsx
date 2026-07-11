@@ -51,13 +51,15 @@ export function FlowSection() {
         {steps.map((step, index) => {
           const Icon = step.icon;
           return (
-            <article key={step.title} className={index === steps.length - 1 ? 'rounded-[22px] border border-brand-yellow/80 bg-brand-navy p-6 text-white shadow-hero lg:col-span-2' : 'rounded-[22px] border border-brand-blue/15 bg-white p-6 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-hero'}>
-              <div className={index === steps.length - 1 ? 'grid h-12 w-12 place-items-center rounded-2xl bg-brand-yellow text-ink' : 'grid h-12 w-12 place-items-center rounded-2xl bg-brand-yellow text-ink'}>
-                <Icon size={23} />
+            <article key={step.title} className={index === steps.length - 1 ? 'flex items-start gap-4 rounded-[22px] border border-brand-yellow/80 bg-brand-navy p-5 text-white shadow-hero md:block md:p-6 lg:col-span-2' : 'flex items-start gap-4 rounded-[22px] border border-brand-blue/15 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-hero md:block md:p-6'}>
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-yellow text-ink md:h-12 md:w-12">
+                <Icon size={22} />
               </div>
-              <div className={index === steps.length - 1 ? 'mt-5 text-xs font-extrabold uppercase tracking-[0.14em] text-brand-yellow' : 'mt-5 text-xs font-extrabold uppercase tracking-[0.14em] text-brand-blue'}>Passo {index + 1}</div>
-              <h3 className="mt-2 font-display text-2xl font-semibold">{step.title}</h3>
-              <p className={index === steps.length - 1 ? 'mt-3 text-sm leading-7 text-white/80' : 'mt-3 text-sm leading-7 text-slate-600'}>{step.description}</p>
+              <div>
+                <div className={index === steps.length - 1 ? 'text-xs font-extrabold uppercase tracking-[0.14em] text-brand-yellow md:mt-5' : 'text-xs font-extrabold uppercase tracking-[0.14em] text-brand-blue md:mt-5'}>Passo {index + 1}</div>
+                <h3 className="mt-1 font-display text-xl font-semibold md:mt-2 md:text-2xl">{step.title}</h3>
+                <p className={index === steps.length - 1 ? 'mt-2 text-sm leading-6 text-white/80 md:mt-3 md:leading-7' : 'mt-2 text-sm leading-6 text-slate-600 md:mt-3 md:leading-7'}>{step.description}</p>
+              </div>
             </article>
           );
         })}

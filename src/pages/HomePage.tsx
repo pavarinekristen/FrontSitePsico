@@ -42,7 +42,7 @@ export function HomePage() {
         <div>
           <SectionHeading eyebrow="Sobre o IDEIA" title={<>Um espaço feito para a psicologia <span className="rounded-md bg-title-mark px-1 text-brand-navy">acontecer.</span></>} description="O Instituto Ideia nasceu para resolver um problema real de quem atende: encontrar um espaço profissional, acolhedor e sem burocracia." />
           <blockquote className="mt-6 border-l-4 border-brand-yellow pl-5 font-display text-2xl font-medium leading-snug text-ink">Nossa missão é simples: cuidar da estrutura para que você cuide das pessoas.</blockquote>
-          <div className="mt-6 flex flex-wrap gap-3 text-sm font-bold text-brand-blue">{['Região central', 'Salas equipadas', 'Reserva por hora'].map((tag) => <span key={tag} className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-4 py-2">{tag}</span>)}</div>
+          <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-bold text-brand-blue md:justify-start">{['Região central', 'Salas equipadas', 'Reserva por hora'].map((tag) => <span key={tag} className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-4 py-2">{tag}</span>)}</div>
         </div>
       </section>
       <BenefitsSection />

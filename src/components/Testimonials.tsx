@@ -83,7 +83,7 @@ export function Testimonials() {
 
   return (
     <section id="depoimentos" className="mx-auto max-w-6xl px-4 pt-16 sm:px-5 md:px-8 md:pt-24">
-      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col items-center gap-5 md:flex-row md:items-end md:justify-between">
         <SectionHeading eyebrow="Quem atende aqui" title={<>O que os psicólogos <span className="rounded-md bg-title-mark px-1 text-brand-navy">dizem</span></>} />
         <div className="flex gap-2">
           <button type="button" onClick={goPrevious} aria-label="Feedbacks anteriores" className="grid h-11 w-11 place-items-center rounded-full border border-brand-blue/15 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
@@ -97,7 +97,7 @@ export function Testimonials() {
 
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         {visibleTestimonials.map((item) => (
-          <figure key={item.name} className="m-0 flex min-h-[260px] flex-col gap-4 rounded-[22px] border border-brand-blue/15 bg-white p-7 shadow-card transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-hero">
+          <figure key={item.name} className="m-0 flex flex-col gap-3 rounded-[22px] border border-brand-blue/15 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-hero sm:p-6 md:min-h-[260px] md:gap-4 md:p-7">
             <div className="mt-2 font-display text-5xl leading-[0.5] text-brand-yellow">“</div>
             <blockquote className="m-0 text-sm leading-7 text-slate-700">{item.quote}</blockquote>
             <figcaption className="mt-auto flex items-center gap-3">
@@ -108,7 +108,7 @@ export function Testimonials() {
         ))}
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-2">
+      <div className="mt-5 hidden items-center justify-center gap-2 md:flex">
         {Array.from({ length: Math.ceil(testimonials.length / visibleCount) }, (_, index) => {
           const isActive = Math.floor(activeIndex / visibleCount) === index;
           return <span key={index} className={isActive ? 'h-2.5 w-8 rounded-full bg-brand-blue transition-all' : 'h-2.5 w-2.5 rounded-full bg-brand-blue/20 transition-all'} />;

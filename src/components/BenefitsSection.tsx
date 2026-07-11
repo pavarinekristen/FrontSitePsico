@@ -37,12 +37,14 @@ export function BenefitsSection() {
         {benefits.map((benefit) => {
           const Icon = benefit.icon;
           return (
-            <article key={benefit.title} className="rounded-[22px] border border-brand-blue/15 bg-white p-6 text-center shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-hero">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full border border-brand-blue/15 bg-brand-soft text-brand-blue shadow-sm">
-                <Icon size={29} />
+            <article key={benefit.title} className="flex items-start gap-4 rounded-[22px] border border-brand-blue/15 bg-white p-5 text-left shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-hero md:block md:p-6 md:text-center">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-brand-blue/15 bg-brand-soft text-brand-blue shadow-sm md:mx-auto md:h-16 md:w-16">
+                <Icon size={24} />
               </div>
-              <h3 className="mt-5 font-display text-xl font-semibold text-ink">{benefit.title}</h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">{benefit.description}</p>
+              <div>
+                <h3 className="font-display text-xl font-semibold text-ink md:mt-5">{benefit.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600 md:mt-3 md:leading-7">{benefit.description}</p>
+              </div>
             </article>
           );
         })}

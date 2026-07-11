@@ -45,7 +45,7 @@ export function PlansSection({ selectedPlan, onSelectPlan }: PlansSectionProps) 
   }
 
   return (
-    <section id="planos" className="bg-white/55 py-16 md:py-24">
+    <section id="planos" className="py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-4 sm:px-5 md:px-8">
         <SectionHeading
           eyebrow="Planos e valores"

@@ -46,19 +46,19 @@ export function CookieConsentBanner() {
           className="fixed inset-x-0 bottom-0 z-50 p-3 sm:p-4"
         >
           <div className="mx-auto max-w-3xl rounded-3xl bg-white p-4 shadow-card ring-1 ring-slate-200 sm:p-5">
-            <p className="text-sm leading-relaxed text-slate-600">
+            <p className="text-xs leading-5 text-slate-600 sm:text-sm sm:leading-relaxed">
               {HAS_TRACKING_CONFIGURED
                 ? 'Usamos cookies necessários para o funcionamento do site e para lembrar suas preferências. Com sua autorização, também podemos usar cookies analíticos para entender o uso da página e melhorar a experiência.'
                 : 'Usamos cookies necessários para funcionamento do site e serviços externos como mapa e fontes. Caso adicionemos cookies analíticos ou de marketing, pediremos seu consentimento.'}{' '}
               <Link to="/politica-de-cookies" className="font-bold text-brand-blue underline">Política de Cookies</Link>
             </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button onClick={handleAcceptAll}>Aceitar todos</Button>
-              <Button variant="secondary" onClick={handleNecessaryOnly}>Usar apenas necessários</Button>
+            <div className="mt-3 flex flex-col gap-2 sm:mt-4 sm:flex-row sm:flex-wrap">
+              <Button onClick={handleAcceptAll} className="py-2.5 sm:py-3">Aceitar todos</Button>
+              <Button variant="secondary" onClick={handleNecessaryOnly} className="py-2.5 sm:py-3">Usar apenas necessários</Button>
               <Button
                 onClick={() => setShowModal(true)}
                 aria-label="Configurar preferências de cookies"
-                className="bg-transparent text-slate-600 shadow-none ring-1 ring-slate-300 hover:translate-y-0 hover:bg-slate-50 hover:text-ink hover:shadow-none"
+                className="bg-transparent py-2.5 text-slate-600 shadow-none ring-1 ring-slate-300 hover:translate-y-0 hover:bg-slate-50 hover:text-ink hover:shadow-none sm:py-3"
               >
                 Configurar
               </Button>

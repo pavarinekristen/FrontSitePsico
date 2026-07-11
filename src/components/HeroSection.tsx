@@ -22,17 +22,17 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
     <section id="inicio" className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-5 md:px-8 md:pb-24 md:pt-8">
       <div className={cn('relative overflow-hidden rounded-3xl border p-5 shadow-hero transition duration-500 sm:p-6 md:rounded-[30px] md:p-14', lampOn ? 'border-brand-blue/15 bg-hero' : 'border-white/10 bg-[#111b34]')}>
         <div className="grid items-center gap-8 lg:grid-cols-[1.12fr_0.88fr]">
-          <motion.div initial="hidden" animate="visible" transition={{ staggerChildren: 0.08 }}>
+          <motion.div initial="hidden" animate="visible" transition={{ staggerChildren: 0.08 }} className="text-center md:text-left">
             <motion.span variants={reveal} className={cn('text-xs font-extrabold uppercase tracking-[0.18em]', lampOn ? 'text-brand-blue' : 'text-brand-yellow')}>
               Aluguel de salas para psicólogos
             </motion.span>
-            <motion.h1 variants={reveal} className={cn('mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-normal md:text-6xl md:leading-none', lampOn ? 'text-ink' : 'text-white')}>
+            <motion.h1 variants={reveal} className={cn('mx-auto mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-normal md:mx-0 md:text-6xl md:leading-none', lampOn ? 'text-ink' : 'text-white')}>
               Seu espaço de atendimento, <span className="rounded-md bg-title-mark px-1 text-brand-navy">pronto para usar.</span>
             </motion.h1>
-            <motion.p variants={reveal} className={cn('mt-5 max-w-xl text-lg leading-8', lampOn ? 'text-slate-700' : 'text-white/75')}>
+            <motion.p variants={reveal} className={cn('mx-auto mt-5 max-w-xl text-lg leading-8 md:mx-0', lampOn ? 'text-slate-700' : 'text-white/75')}>
               Salas equipadas por hora ou período, no centro de Uberlândia. Escolha o plano, confira a disponibilidade e só pague depois da validação.
             </motion.p>
-            <motion.div variants={reveal} className="mt-7 flex flex-wrap items-center gap-4">
+            <motion.div variants={reveal} className="mt-7 flex flex-wrap items-center justify-center gap-4 md:justify-start">
               <a className="inline-flex items-center gap-2 rounded-full bg-brand-blue px-7 py-4 font-extrabold text-white shadow-brand transition hover:-translate-y-0.5" href="#salas">
                 Ver disponibilidade <ArrowRight size={18} />
               </a>
@@ -40,12 +40,12 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
                 Conhecer o espaço
               </a>
             </motion.div>
-            <motion.div variants={reveal} className={cn('mt-6 flex items-center gap-2 text-sm font-semibold', lampOn ? 'text-slate-600' : 'text-white/70')}>
+            <motion.div variants={reveal} className={cn('mt-6 flex items-center justify-center gap-2 text-sm font-semibold md:justify-start', lampOn ? 'text-slate-600' : 'text-white/70')}>
               <CheckCircle2 size={18} className="text-brand-blue" /> Duas salas equipadas · R. Francisco Sales, 1341 · Uberlândia - MG
             </motion.div>
           </motion.div>
 
-          <div className="relative mx-auto grid aspect-square w-full max-w-[300px] place-items-center overflow-visible md:max-w-[430px]">
+          <div className="relative mx-auto grid aspect-square w-full max-w-[210px] place-items-center overflow-visible md:max-w-[430px]">
             <div className={cn('absolute inset-0 m-auto h-4/5 w-4/5 rounded-full blur-2xl transition duration-500', lampOn ? 'bg-brand-yellow/60 animate-glow-pulse' : 'bg-slate-900/30')} />
             <div className={cn('absolute inset-0 m-auto h-[82%] w-[82%] rounded-full border-8 transition duration-500 md:border-[14px]', lampOn ? 'border-brand-yellow/55 animate-spin-slow' : 'border-white/10')} />
             <motion.div
@@ -123,7 +123,7 @@ function AnimatedLightbulb({ lampOn }: AnimatedLightbulbProps) {
   ];
 
   return (
-    <svg viewBox="0 0 280 350" className="h-auto w-[210px] max-w-full drop-shadow-[0_26px_34px_rgba(20,51,111,0.4)] md:w-[280px]">
+    <svg viewBox="0 0 280 350" className="h-auto w-[150px] max-w-full drop-shadow-[0_26px_34px_rgba(20,51,111,0.4)] md:w-[280px]">
       <defs>
         <radialGradient id="bulbGlass" cx="38%" cy="30%" r="78%">
           <stop offset="0%" stopColor="#FFFDF2" />
