@@ -41,7 +41,7 @@ const steps = [
 
 export function FlowSection() {
   return (
-    <section id="fluxo" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+    <section id="fluxo" className="mx-auto max-w-6xl px-4 py-16 sm:px-5 md:px-8 md:py-24">
       <SectionHeading
         eyebrow="Como funciona"
         title={<>Uma jornada pensada para <span className="rounded-md bg-title-mark px-1 text-brand-navy">evitar falhas</span></>}

@@ -1,8 +1,8 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, BellOff, BellRing, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
-import { type AdminReservation, type AdminReservationUpdate, adminCancelReservation, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations } from '../services/agendaApi';
+import { type AdminReservation, type AdminReservationSlot, type AdminReservationUpdate, type AgendaSlot, adminCancelReservation, adminCancelReservationSlot, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations, getAvailability } from '../services/agendaApi';
 import { shortReservaId } from '../services/whatsappService';
-import { planosDisponiveis } from '../features/agendamento/data/rooms';
+import { planosDisponiveis, salas } from '../features/agendamento/data/rooms';
 import { useClipboard } from '../hooks/useClipboard';
 import { cn } from '../utils/cn';
 import { getTodayInSaoPaulo } from '../utils/formatDate';
@@ -59,11 +59,19 @@ export function AdminPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => getTodayInSaoPaulo());
+  const [agendaSalaId, setAgendaSalaId] = useState(() => salas[0]?.id ?? 'sala1');
+  const [adminAgendaSlots, setAdminAgendaSlots] = useState<AgendaSlot[]>([]);
+  const [adminAgendaLoading, setAdminAgendaLoading] = useState(false);
+  const [adminAgendaError, setAdminAgendaError] = useState<string | null>(null);
   const [dayReservations, setDayReservations] = useState<AdminReservation[] | null>(null);
   const [editing, setEditing] = useState<AdminReservation | null>(null);
-  const [editForm, setEditForm] = useState({ nome: '', whatsapp: '', plano: '' });
+  const [editForm, setEditForm] = useState({ nome: '', whatsapp: '', plano: '', crp: '', abordagem: '', publicosAtendidos: [] as string[] });
   const [editError, setEditError] = useState<string | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<AdminReservation | null>(null);
+  const [scheduleSelection, setScheduleSelection] = useState<Set<string>>(new Set());
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [savingSchedule, setSavingSchedule] = useState(false);
   const [history, setHistory] = useState<AdminReservation[]>([]);
   const [historySearch, setHistorySearch] = useState('');
   const [selectedHistory, setSelectedHistory] = useState<Set<string>>(new Set());
@@ -138,6 +146,41 @@ export function AdminPage() {
 
     return () => window.clearInterval(intervalId);
   }, [token, selectedDate, load]);
+
+  useEffect(() => {
+    if (!token || !agendaSalaId) {
+      setAdminAgendaSlots([]);
+      return;
+    }
+
+    let active = true;
+    setAdminAgendaLoading(true);
+    setAdminAgendaError(null);
+
+    getAvailability(agendaSalaId, selectedDate)
+      .then((slots) => {
+        if (!active) {
+          return;
+        }
+        setAdminAgendaSlots(slots);
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setAdminAgendaSlots([]);
+        setAdminAgendaError(error instanceof Error ? error.message : 'Erro ao carregar agenda.');
+      })
+      .finally(() => {
+        if (active) {
+          setAdminAgendaLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token, agendaSalaId, selectedDate]);
 
   useEffect(() => {
     soundOnRef.current = soundOn;
@@ -228,7 +271,7 @@ export function AdminPage() {
       return;
     }
 
-    const label = `${reservation.cliente_nome || 'Sem nome'} · ${reservation.sala_numero} · ${formatSlotDateTime(reservation.slot_inicio)}`;
+    const label = `${reservation.cliente_nome || 'Sem nome'} · ${reservation.sala_numero} · ${formatReservationPeriod(reservation)}`;
 
     if (!window.confirm(`Confirmar manualmente a reserva de ${label}?\n\nUse apenas se o cliente não conseguir digitar o código no site.`)) {
       return;
@@ -242,7 +285,7 @@ export function AdminPage() {
       return;
     }
 
-    const label = `${reservation.cliente_nome || 'Sem nome'} · ${reservation.sala_numero} · ${formatSlotDateTime(reservation.slot_inicio)}`;
+    const label = `${reservation.cliente_nome || 'Sem nome'} · ${reservation.sala_numero} · ${formatReservationPeriod(reservation)}`;
 
     if (!window.confirm(`Cancelar o cadastro de ${label}?\n\nO horário volta a ficar LIVRE na agenda para outras pessoas.`)) {
       return;
@@ -258,7 +301,68 @@ export function AdminPage() {
       nome: reservation.cliente_nome ?? '',
       whatsapp: reservation.cliente_whatsapp ?? '',
       plano: reservation.plano,
+      crp: reservation.cliente_crp ?? '',
+      abordagem: reservation.abordagem_trabalho ?? '',
+      publicosAtendidos: splitPublicosAtendidos(reservation.publicos_atendidos),
     });
+  }
+
+  function openScheduleEdit(reservation: AdminReservation) {
+    setEditingSchedule(reservation);
+    setScheduleError(null);
+    setScheduleSelection(new Set(activeSlotItems(reservation).map((slot) => slot.slot_id)));
+  }
+
+  function toggleScheduleSlot(slotId: string) {
+    setScheduleError(null);
+    setScheduleSelection((current) => {
+      const next = new Set(current);
+      if (next.has(slotId)) {
+        next.delete(slotId);
+      } else {
+        next.add(slotId);
+      }
+      return next;
+    });
+  }
+
+  async function saveScheduleEdit() {
+    if (!token || !editingSchedule || savingSchedule) {
+      return;
+    }
+
+    const activeSlots = activeSlotItems(editingSchedule);
+    const removed = activeSlots.filter((slot) => !scheduleSelection.has(slot.slot_id));
+
+    if (removed.length === 0) {
+      setEditingSchedule(null);
+      return;
+    }
+
+    if (scheduleSelection.size === 0) {
+      setScheduleError('Para remover todos os horários, use o botão Recusar/Cancelar cadastro.');
+      return;
+    }
+
+    const label = removed.map((slot) => formatSlotPeriod(slot.slot_inicio, slot.slot_fim)).join(', ');
+    if (!window.confirm(`Remover ${removed.length} horário(s) da reserva?\n\n${label}\n\nEsses horários voltarão a ficar livres na agenda.`)) {
+      return;
+    }
+
+    setSavingSchedule(true);
+    setScheduleError(null);
+
+    try {
+      for (const slot of removed) {
+        await adminCancelReservationSlot(token, editingSchedule.reserva_id, slot.slot_id);
+      }
+      setEditingSchedule(null);
+      await load(token, selectedDate);
+    } catch (error) {
+      setScheduleError(error instanceof Error ? error.message : 'Erro ao salvar os horários.');
+    } finally {
+      setSavingSchedule(false);
+    }
   }
 
   async function saveEdit() {
@@ -282,6 +386,18 @@ export function AdminPage() {
 
       if (editForm.plano) {
         changes.plano = editForm.plano;
+      }
+
+      if (editForm.crp.trim()) {
+        changes.cliente_crp = editForm.crp.trim();
+      }
+
+      if (editForm.abordagem.trim()) {
+        changes.abordagem_trabalho = editForm.abordagem.trim();
+      }
+
+      if (editForm.publicosAtendidos.length > 0) {
+        changes.publicos_atendidos = editForm.publicosAtendidos;
       }
 
       await adminUpdateReservation(token, editing.reserva_id, changes);
@@ -455,8 +571,11 @@ export function AdminPage() {
                       <h3 className="font-display text-lg font-semibold">{reservation.cliente_nome || 'Sem nome'}</h3>
                       <span className="rounded-full bg-brand-soft px-2.5 py-1 text-[11px] font-extrabold text-brand-blue">#{shortReservaId(reservation.reserva_id)}</span>
                     </div>
-                    <p className="mt-1 text-sm font-bold text-slate-600">{reservation.sala_numero} · {reservation.sala_nome} — {formatSlotDateTime(reservation.slot_inicio)}</p>
-                    <p className="mt-1 text-xs font-bold text-slate-500">WhatsApp: {reservation.cliente_whatsapp || 'não informado'} · {reservation.plano}</p>
+                    <p className="mt-1 text-sm font-bold text-slate-600">{reservation.sala_numero} · {reservation.sala_nome} — {formatReservationPeriod(reservation)}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">
+                      WhatsApp: {reservation.cliente_whatsapp || 'não informado'} · CRP: {reservation.cliente_crp || 'não informado'} · {formatPublicosAtendidos(reservation.publicos_atendidos)} · {reservation.abordagem_trabalho || 'abordagem não informada'} · {reservation.plano} · {formatDurationSlots(reservation.duration_slots)}
+                    </p>
+                    <ReservationSlotList reservation={reservation} />
                     <p className="mt-2 inline-flex rounded-full bg-[#FFF4D6] px-3 py-1 text-xs font-extrabold text-[#8A6100]">⏱ Expira em {formatRemaining(reservation.seconds_to_expire ?? 0)}</p>
                   </div>
                   <div className="text-right">
@@ -490,6 +609,14 @@ export function AdminPage() {
                       <button
                         type="button"
                         disabled={busyId !== null}
+                        onClick={() => openScheduleEdit(reservation)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-brand-blue/20 bg-white px-4 py-2 text-xs font-extrabold text-brand-blue transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <CalendarDays size={13} /> Editar horários
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId !== null}
                         onClick={() => cancelReservation(reservation)}
                         className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-extrabold text-red-600 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -500,6 +627,72 @@ export function AdminPage() {
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="mt-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-blue">Agenda</h2>
+              <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold capitalize text-slate-500"><CalendarDays size={15} /> {formatDayLabel(selectedDate)}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select value={agendaSalaId} onChange={(event) => setAgendaSalaId(event.target.value as typeof agendaSalaId)} className="rounded-xl border border-brand-blue/20 bg-white px-3 py-2 text-sm font-bold text-ink outline-none transition focus:border-brand-blue">
+                {salas.map((sala) => <option key={sala.id} value={sala.id}>{sala.numero} · {sala.nome}</option>)}
+              </select>
+              <button type="button" onClick={() => shiftDay(-1)} aria-label="Dia anterior" className="grid h-9 w-9 place-items-center rounded-full border border-brand-blue/20 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5">
+                <ChevronLeft size={16} />
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(event) => event.target.value && setSelectedDate(event.target.value)}
+                className="rounded-xl border border-brand-blue/20 bg-white px-3 py-2 text-sm font-bold text-ink outline-none transition focus:border-brand-blue"
+              />
+              <button type="button" onClick={() => shiftDay(1)} aria-label="Próximo dia" className="grid h-9 w-9 place-items-center rounded-full border border-brand-blue/20 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5">
+                <ChevronRight size={16} />
+              </button>
+              {selectedDate !== getTodayInSaoPaulo() ? (
+                <button type="button" onClick={() => setSelectedDate(getTodayInSaoPaulo())} className="rounded-full bg-brand-yellow px-4 py-2 text-xs font-extrabold text-ink shadow-yellow transition hover:-translate-y-0.5">
+                  Hoje
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {adminAgendaError ? <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{adminAgendaError}</p> : null}
+
+          <div className="mt-3 rounded-2xl border border-brand-blue/15 bg-white p-4 shadow-card">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-sm font-extrabold text-ink">{selectedAgendaRoomLabel(agendaSalaId)}</div>
+              <div className="flex flex-wrap gap-2 text-[11px] font-extrabold">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DDFBE8] px-3 py-1.5 text-[#147A3B]"><span className="h-2 w-2 rounded-full bg-[#25A45B]" /> Livre</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF4D6] px-3 py-1.5 text-[#8A6100]"><span className="h-2 w-2 rounded-full bg-[#E7A70E]" /> Aguardando PIX</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-red-600"><span className="h-2 w-2 rounded-full bg-red-500" /> Ocupado</span>
+              </div>
+            </div>
+            {adminAgendaLoading ? (
+              <p className="rounded-xl bg-brand-soft px-4 py-6 text-center text-sm font-bold text-brand-blue">Carregando agenda...</p>
+            ) : adminAgendaSlots.length === 0 ? (
+              <p className="rounded-xl bg-brand-soft px-4 py-6 text-center text-sm font-bold text-slate-500">Nenhum horário gerado para essa sala nesta data.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                {adminAgendaSlots.map((slot) => (
+                  <div key={slot.id} className={cn('min-h-[70px] rounded-xl border px-3 py-2.5 text-sm font-bold', agendaSlotStyle(slot))}>
+                    <div className="font-display text-lg font-semibold">{formatSlotHour(slot.inicio)} - {formatSlotHour(slot.fim)}</div>
+                    <div className="mt-1 text-xs font-extrabold">{agendaSlotLabel(slot)}</div>
+                    {!slot.available ? (
+                      <div className="mt-1 space-y-0.5 text-[11px] font-semibold">
+                        {slot.cliente_nome ? <div>{slot.cliente_nome}</div> : null}
+                        <div>{slot.cliente_crp || 'CRP não informado'}</div>
+                        <div>{formatPublicosAtendidos(slot.publicos_atendidos)}</div>
+                        <div>{slot.abordagem_trabalho || 'Abordagem não informada'}</div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -546,14 +739,20 @@ export function AdminPage() {
                 ) : null}
                 {dayReservations?.map((reservation) => {
                   const editable = reservation.status === 'lock_temporario' || reservation.status === 'confirmada';
+                  const daySlot = activeSlotItems(reservation)[0];
 
                   return (
                     <tr key={reservation.reserva_id} className="border-b border-brand-blue/5 last:border-0">
                       <td className="px-5 py-3 font-display font-bold text-ink">{formatSlotHour(reservation.slot_inicio)} – {formatSlotHour(reservation.slot_fim)}</td>
                       <td className="px-5 py-3 text-slate-600">{reservation.sala_numero} · {reservation.sala_nome}</td>
                       <td className="px-5 py-3 font-bold">{reservation.cliente_nome || 'Sem nome'}</td>
-                      <td className="px-5 py-3 text-slate-600">{reservation.cliente_whatsapp || '—'}</td>
-                      <td className="px-5 py-3 text-slate-600">{reservation.plano}</td>
+                      <td className="px-5 py-3 text-slate-600">
+                        <div>{reservation.cliente_whatsapp || '—'}</div>
+                        <div className="mt-1 text-[11px] leading-5 text-slate-500">
+                          CRP: {reservation.cliente_crp || '—'} · {formatPublicosAtendidos(reservation.publicos_atendidos)} · {reservation.abordagem_trabalho || 'Abordagem não informada'}
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-slate-600">{reservation.plano} · {formatDurationSlots(reservation.duration_slots)}</td>
                       <td className="px-5 py-3"><StatusBadge status={reservation.status} /></td>
                       <td className="px-5 py-3">
                         {editable ? (
@@ -562,19 +761,19 @@ export function AdminPage() {
                               type="button"
                               disabled={busyId !== null}
                               onClick={() => openEdit(reservation)}
-                              title="Editar dados"
+                              title="Editar dados do cliente"
                               className="grid h-8 w-8 place-items-center rounded-full border border-brand-blue/20 bg-white text-brand-blue transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <Pencil size={13} />
                             </button>
                             <button
                               type="button"
-                              disabled={busyId !== null}
-                              onClick={() => cancelReservation(reservation)}
-                              title="Cancelar cadastro (libera o horário)"
-                              className="grid h-8 w-8 place-items-center rounded-full border border-red-200 bg-red-50 text-red-600 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                              disabled={busyId !== null || !daySlot}
+                              onClick={() => openScheduleEdit(reservation)}
+                              title="Editar horários da reserva"
+                              className="grid h-8 w-8 place-items-center rounded-full border border-brand-blue/20 bg-white text-brand-blue transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                              <X size={13} />
+                              <CalendarDays size={13} />
                             </button>
                           </div>
                         ) : (
@@ -641,8 +840,16 @@ export function AdminPage() {
                   <tr key={reservation.reserva_id} className={cn('border-b border-brand-blue/5 last:border-0', selectedHistory.has(reservation.reserva_id) && 'bg-brand-soft/60')}>
                     <td className="px-4 py-3"><input type="checkbox" checked={selectedHistory.has(reservation.reserva_id)} onChange={() => toggleHistorySelect(reservation.reserva_id)} aria-label={`Selecionar ${reservation.cliente_nome || 'cadastro'}`} className="h-4 w-4 accent-brand-blue" /></td>
                     <td className="px-4 py-3 font-bold">{reservation.cliente_nome || 'Sem nome'}</td>
-                    <td className="px-4 py-3 text-slate-600">{reservation.sala_numero} — {formatSlotDateTime(reservation.slot_inicio)}</td>
-                    <td className="px-4 py-3 text-slate-600">{reservation.plano}</td>
+                    <td className="px-4 py-3 text-slate-600">
+                      <div>{reservation.sala_numero} — {formatReservationPeriod(reservation)}</div>
+                      <ReservationSlotList reservation={reservation} compact />
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">
+                      <div>{reservation.plano} · {formatDurationSlots(reservation.duration_slots)}</div>
+                      <div className="mt-1 text-[11px] leading-5 text-slate-500">
+                        CRP: {reservation.cliente_crp || '—'} · {formatPublicosAtendidos(reservation.publicos_atendidos)} · {reservation.abordagem_trabalho || 'Abordagem não informada'}
+                      </div>
+                    </td>
                     <td className="px-4 py-3"><StatusBadge status={reservation.status} /></td>
                     <td className="px-4 py-3">
                       <button
@@ -692,11 +899,90 @@ export function AdminPage() {
                   {planosDisponiveis.map((plano) => <option key={plano} value={plano}>{plano}</option>)}
                 </select>
               </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">CRP</span>
+                <input value={editForm.crp} onChange={(event) => setEditForm((current) => ({ ...current, crp: event.target.value }))} className="w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white" placeholder="CRP 00/00000" />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Abordagem</span>
+                <input value={editForm.abordagem} onChange={(event) => setEditForm((current) => ({ ...current, abordagem: event.target.value }))} className="w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white" placeholder="TCC, psicanálise, humanista..." />
+              </label>
+              <div>
+                <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Público atendido</span>
+                <div className="grid gap-2 md:grid-cols-3">
+                  {['Adulto', 'Criança', 'Adolescente'].map((publico) => {
+                    const active = editForm.publicosAtendidos.includes(publico);
+                    return (
+                      <button
+                        key={publico}
+                        type="button"
+                        onClick={() => setEditForm((current) => ({
+                          ...current,
+                          publicosAtendidos: active
+                            ? current.publicosAtendidos.filter((item) => item !== publico)
+                            : [...current.publicosAtendidos, publico],
+                        }))}
+                        className={cn('rounded-xl border px-3 py-3 text-left text-sm font-bold transition', active ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-blue/20 bg-brand-soft text-brand-blue')}
+                      >
+                        {publico}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             {editError ? <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">{editError}</p> : null}
             <div className="mt-6 flex gap-3">
               <button type="button" disabled={savingEdit} onClick={() => setEditing(null)} className="flex-1 rounded-xl border border-brand-blue/20 bg-white px-4 py-3 text-sm font-extrabold text-slate-500 transition hover:-translate-y-0.5 disabled:opacity-50">Cancelar</button>
               <button type="button" disabled={savingEdit} onClick={() => void saveEdit()} className="flex-1 rounded-xl bg-brand-blue px-4 py-3 text-sm font-extrabold text-white shadow-brand transition hover:-translate-y-0.5 disabled:opacity-50">{savingEdit ? 'Salvando...' : 'Salvar alterações'}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingSchedule ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4 backdrop-blur-sm" onClick={() => !savingSchedule && setEditingSchedule(null)}>
+          <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-hero" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-display text-xl font-semibold text-ink">Editar horários</h3>
+                <p className="mt-1 text-sm font-bold text-slate-500">{editingSchedule.cliente_nome || 'Sem nome'} · {editingSchedule.sala_numero} · {editingSchedule.plano}</p>
+              </div>
+              <button type="button" onClick={() => !savingSchedule && setEditingSchedule(null)} aria-label="Fechar" className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-blue transition hover:bg-brand-bg">
+                <X size={16} />
+              </button>
+            </div>
+
+            <p className="mt-4 rounded-xl border border-brand-blue/15 bg-brand-soft px-4 py-3 text-sm font-bold text-brand-blue">Desmarque o dia/horário que o cliente cancelou. Ao salvar, esse horário volta a ficar livre na agenda e os demais continuam na reserva.</p>
+
+            <div className="mt-5 flex max-h-[360px] flex-col gap-2 overflow-y-auto pr-1">
+              {(editingSchedule.slot_items ?? []).map((slot) => {
+                const cancelled = slot.status === 'cancelada';
+                const checked = cancelled ? false : scheduleSelection.has(slot.slot_id);
+
+                return (
+                  <label key={slot.slot_id} className={cn('flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold', cancelled ? 'border-slate-200 bg-slate-50 text-slate-400' : checked ? 'border-brand-blue bg-brand-soft text-brand-blue' : 'border-red-200 bg-red-50 text-red-600')}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={cancelled || savingSchedule}
+                      onChange={() => toggleScheduleSlot(slot.slot_id)}
+                      className="h-4 w-4 accent-brand-blue"
+                    />
+                    <span className="flex-1">{formatSlotPeriod(slot.slot_inicio, slot.slot_fim)}</span>
+                    <span className={cn('rounded-full px-2 py-1 text-[10px] font-extrabold uppercase', cancelled ? 'bg-slate-200 text-slate-500' : checked ? 'bg-[#DDFBE8] text-[#147A3B]' : 'bg-red-100 text-red-600')}>
+                      {cancelled ? 'Cancelado' : checked ? 'Mantém' : 'Remover'}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            {scheduleError ? <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700">{scheduleError}</p> : null}
+
+            <div className="mt-6 flex gap-3">
+              <button type="button" disabled={savingSchedule} onClick={() => setEditingSchedule(null)} className="flex-1 rounded-xl border border-brand-blue/20 bg-white px-4 py-3 text-sm font-extrabold text-slate-500 transition hover:-translate-y-0.5 disabled:opacity-50">Cancelar</button>
+              <button type="button" disabled={savingSchedule} onClick={() => void saveScheduleEdit()} className="flex-1 rounded-xl bg-brand-blue px-4 py-3 text-sm font-extrabold text-white shadow-brand transition hover:-translate-y-0.5 disabled:opacity-50">{savingSchedule ? 'Salvando...' : 'Salvar horários'}</button>
             </div>
           </div>
         </div>
@@ -720,6 +1006,93 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return <span className={cn('rounded-full px-3 py-1 text-xs font-extrabold', styles[status] ?? 'bg-brand-soft text-brand-blue')}>{labels[status] ?? status}</span>;
+}
+
+function selectedAgendaRoomLabel(roomId: string): string {
+  const room = salas.find((sala) => sala.id === roomId);
+
+  return room ? `${room.numero} · ${room.nome}` : 'Sala selecionada';
+}
+
+function splitPublicosAtendidos(value: string | null | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  return value.split(',').map((item) => item.trim()).filter((item) => item.length > 0);
+}
+
+function formatPublicosAtendidos(value: string | null | undefined): string {
+  const items = splitPublicosAtendidos(value);
+
+  return items.length > 0 ? `Público atendido: ${items.join(', ')}` : 'Público atendido não informado';
+}
+
+function agendaSlotLabel(slot: AgendaSlot): string {
+  const labels: Record<AgendaSlot['status'], string> = {
+    livre: 'Livre',
+    lock_temporario: 'Aguardando PIX',
+    confirmada: 'Ocupado',
+    bloqueada_admin: 'Bloqueado',
+  };
+
+  return labels[slot.status] ?? slot.status;
+}
+
+function agendaSlotStyle(slot: AgendaSlot): string {
+  const styles: Record<AgendaSlot['status'], string> = {
+    livre: 'border-green-200 bg-[#DDFBE8] text-[#147A3B]',
+    lock_temporario: 'border-yellow-200 bg-[#FFF4D6] text-[#8A6100]',
+    confirmada: 'border-red-200 bg-red-50 text-red-600',
+    bloqueada_admin: 'border-slate-200 bg-slate-100 text-slate-500',
+  };
+
+  return styles[slot.status] ?? 'border-brand-blue/15 bg-brand-soft text-brand-blue';
+}
+
+interface ReservationSlotListProps {
+  reservation: AdminReservation;
+  onCancelSlot?: (slot: AdminReservationSlot) => void;
+  busyId?: string | null;
+  compact?: boolean;
+}
+
+function ReservationSlotList({ reservation, onCancelSlot, busyId, compact = false }: ReservationSlotListProps) {
+  const items = reservation.slot_items ?? [];
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={compact ? 'mt-1 flex flex-col gap-1' : 'mt-3 flex flex-col gap-2'}>
+      {items.map((slot) => {
+        const cancelled = slot.status === 'cancelada';
+        const busy = busyId === `${reservation.reserva_id}:${slot.slot_id}`;
+
+        return (
+          <div key={slot.slot_id} className={cn('flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold', cancelled ? 'border-slate-200 bg-slate-50 text-slate-400' : 'border-brand-blue/15 bg-brand-soft text-brand-blue')}>
+            <span className="font-display text-sm font-semibold">{formatSlotPeriod(slot.slot_inicio, slot.slot_fim)}</span>
+            <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-extrabold uppercase', cancelled ? 'bg-slate-200 text-slate-500' : 'bg-[#DDFBE8] text-[#147A3B]')}>{cancelled ? 'Cancelado' : 'Ativo'}</span>
+            {onCancelSlot && !cancelled ? (
+              <button
+                type="button"
+                disabled={busyId !== null}
+                onClick={() => onCancelSlot(slot)}
+                className="ml-auto rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-extrabold text-red-600 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busy ? 'Cancelando...' : 'Cancelar horário'}
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function activeSlotItems(reservation: AdminReservation): AdminReservationSlot[] {
+  return (reservation.slot_items ?? []).filter((slot) => slot.status !== 'cancelada');
 }
 
 function formatSlotHour(value: string): string {
@@ -767,8 +1140,28 @@ function formatSlotDateTime(value: string): string {
   }).format(date);
 }
 
+function formatSlotPeriod(start: string, end: string): string {
+  return `${formatSlotDateTime(start)} - ${formatSlotHour(end)}`;
+}
+
+function formatReservationPeriod(reservation: AdminReservation): string {
+  const activeSlots = activeSlotItems(reservation);
+
+  if (activeSlots.length <= 1) {
+    return formatSlotPeriod(reservation.slot_inicio, reservation.slot_fim);
+  }
+
+  return `${activeSlots.length} horários selecionados`;
+}
+
 function formatRemaining(seconds: number): string {
   const minutes = Math.max(0, Math.floor(seconds / 60));
 
   return minutes >= 1 ? `${minutes} min` : 'menos de 1 min';
+}
+
+function formatDurationSlots(value: number | string | undefined): string {
+  const hours = Number(value ?? 1);
+
+  return `${hours} hora${hours === 1 ? '' : 's'}`;
 }

@@ -26,7 +26,7 @@ const benefits = [
 
 export function BenefitsSection() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-20 md:px-8">
+    <section className="mx-auto max-w-6xl px-4 py-14 sm:px-5 md:px-8 md:py-20">
       <SectionHeading
         align="center"
         eyebrow="Benefícios de fazer parte"

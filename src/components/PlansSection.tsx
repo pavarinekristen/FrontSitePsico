@@ -45,8 +45,8 @@ export function PlansSection({ selectedPlan, onSelectPlan }: PlansSectionProps) 
   }
 
   return (
-    <section id="planos" className="bg-white/55 py-24">
-      <div className="mx-auto max-w-6xl px-5 md:px-8">
+    <section id="planos" className="bg-white/55 py-16 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-5 md:px-8">
         <SectionHeading
           eyebrow="Planos e valores"
           title={<>Escolha o plano antes de <span className="rounded-md bg-title-mark px-1 text-brand-navy">verificar a agenda</span></>}
@@ -64,7 +64,7 @@ export function PlansSection({ selectedPlan, onSelectPlan }: PlansSectionProps) 
                 <span className="font-display text-4xl font-semibold text-ink">{plan.price}</span>
                 <span className="ml-1 text-sm font-bold text-slate-500">{plan.note}</span>
               </div>
-              <p className="mt-5 text-sm leading-7 text-slate-600">Disponibilidade conferida antes do cadastro e do pagamento.</p>
+              <p className="mt-5 text-sm leading-7 text-slate-600">Disponibilidade conferida antes do cadastro e do pagamento. Cancelamentos ou remarcações com no mínimo 48h de antecedência.</p>
               <button type="button" onClick={() => choosePlan(plan.id)} className={selectedPlan === plan.id ? 'mt-6 w-full rounded-xl bg-brand-blue px-4 py-3 text-sm font-extrabold text-white shadow-brand transition hover:-translate-y-0.5' : 'mt-6 w-full rounded-xl bg-brand-yellow px-4 py-3 text-sm font-extrabold text-ink shadow-yellow transition hover:-translate-y-0.5'}>
                 {selectedPlan === plan.id ? 'Plano selecionado' : 'Escolher plano'}
               </button>

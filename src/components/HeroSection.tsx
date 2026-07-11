@@ -19,14 +19,14 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
   }
 
   return (
-    <section id="inicio" className="mx-auto max-w-6xl px-5 pb-24 pt-8 md:px-8">
-      <div className={cn('relative overflow-hidden rounded-[30px] border p-6 shadow-hero transition duration-500 md:p-14', lampOn ? 'border-brand-blue/15 bg-hero' : 'border-white/10 bg-[#111b34]')}>
+    <section id="inicio" className="mx-auto max-w-6xl px-4 pb-16 pt-6 sm:px-5 md:px-8 md:pb-24 md:pt-8">
+      <div className={cn('relative overflow-hidden rounded-3xl border p-5 shadow-hero transition duration-500 sm:p-6 md:rounded-[30px] md:p-14', lampOn ? 'border-brand-blue/15 bg-hero' : 'border-white/10 bg-[#111b34]')}>
         <div className="grid items-center gap-8 lg:grid-cols-[1.12fr_0.88fr]">
           <motion.div initial="hidden" animate="visible" transition={{ staggerChildren: 0.08 }}>
             <motion.span variants={reveal} className={cn('text-xs font-extrabold uppercase tracking-[0.18em]', lampOn ? 'text-brand-blue' : 'text-brand-yellow')}>
               Aluguel de salas para psicólogos
             </motion.span>
-            <motion.h1 variants={reveal} className={cn('mt-4 max-w-3xl font-display text-4xl font-semibold leading-none tracking-normal md:text-6xl', lampOn ? 'text-ink' : 'text-white')}>
+            <motion.h1 variants={reveal} className={cn('mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-normal md:text-6xl md:leading-none', lampOn ? 'text-ink' : 'text-white')}>
               Seu espaço de atendimento, <span className="rounded-md bg-title-mark px-1 text-brand-navy">pronto para usar.</span>
             </motion.h1>
             <motion.p variants={reveal} className={cn('mt-5 max-w-xl text-lg leading-8', lampOn ? 'text-slate-700' : 'text-white/75')}>
@@ -45,9 +45,9 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
             </motion.div>
           </motion.div>
 
-          <div className="relative mx-auto grid aspect-square w-full max-w-[430px] place-items-center overflow-visible">
-            <div className={cn('absolute h-4/5 w-4/5 rounded-full blur-2xl transition duration-500', lampOn ? 'bg-brand-yellow/60 animate-glow-pulse' : 'bg-slate-900/30')} />
-            <div className={cn('absolute h-[82%] w-[82%] rounded-full border-[14px] transition duration-500', lampOn ? 'border-brand-yellow/55 animate-spin-slow' : 'border-white/10')} />
+          <div className="relative mx-auto grid aspect-square w-full max-w-[300px] place-items-center overflow-visible md:max-w-[430px]">
+            <div className={cn('absolute inset-0 m-auto h-4/5 w-4/5 rounded-full blur-2xl transition duration-500', lampOn ? 'bg-brand-yellow/60 animate-glow-pulse' : 'bg-slate-900/30')} />
+            <div className={cn('absolute inset-0 m-auto h-[82%] w-[82%] rounded-full border-8 transition duration-500 md:border-[14px]', lampOn ? 'border-brand-yellow/55 animate-spin-slow' : 'border-white/10')} />
             <motion.div
               animate={{ y: [0, -14, 0], rotate: [-4, 4, -4] }}
               transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
@@ -59,7 +59,15 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
                 transition={{ duration: 0.78, ease: [0.22, 0.85, 0.25, 1] }}
                 className="relative grid place-items-center overflow-visible"
               >
-                <AnimatedLightbulb lampOn={lampOn} />
+                <button
+                  type="button"
+                  onClick={handleCordPull}
+                  aria-pressed={lampOn}
+                  aria-label={lampOn ? 'Tocar na lâmpada para apagar' : 'Tocar na lâmpada para acender'}
+                  className="cursor-pointer outline-none md:pointer-events-none"
+                >
+                  <AnimatedLightbulb lampOn={lampOn} />
+                </button>
                 <PullCord lampOn={lampOn} onPull={handleCordPull} />
               </motion.div>
             </motion.div>
@@ -82,7 +90,7 @@ function PullCord({ lampOn, onPull }: PullCordProps) {
       onClick={onPull}
       aria-pressed={lampOn}
       aria-label={lampOn ? 'Puxar corda para apagar lâmpada' : 'Puxar corda para acender lâmpada'}
-      className="absolute z-50 flex h-48 w-20 items-start justify-center outline-none"
+      className="absolute z-50 hidden h-48 w-20 items-start justify-center outline-none md:flex"
       style={{ left: 'calc(50% + 34px)', top: 246 }}
       animate={{ y: [0, 5, 0], rotate: [-1.5, 1.5, -1.5] }}
       transition={{ duration: 2.7, repeat: Infinity, ease: 'easeInOut' }}
@@ -115,7 +123,7 @@ function AnimatedLightbulb({ lampOn }: AnimatedLightbulbProps) {
   ];
 
   return (
-    <svg width="280" height="350" viewBox="0 0 280 350" className="drop-shadow-[0_26px_34px_rgba(20,51,111,0.4)]">
+    <svg viewBox="0 0 280 350" className="h-auto w-[210px] max-w-full drop-shadow-[0_26px_34px_rgba(20,51,111,0.4)] md:w-[280px]">
       <defs>
         <radialGradient id="bulbGlass" cx="38%" cy="30%" r="78%">
           <stop offset="0%" stopColor="#FFFDF2" />

@@ -16,7 +16,7 @@ export function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="mx-auto max-w-4xl px-5 pt-24 md:px-8">
+    <section id="faq" className="mx-auto max-w-4xl px-4 pt-16 sm:px-5 md:px-8 md:pt-24">
       <SectionHeading align="center" eyebrow="Dúvidas frequentes" title="Antes de reservar" />
       <div className="mt-9 flex flex-col gap-3">
         {faqs.map((faq, index) => {

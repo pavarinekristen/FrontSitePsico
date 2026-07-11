@@ -40,3 +40,19 @@ export const planosDisponiveis = [
   'Full - 5 a 8 horas',
   'Premium - acima de 9 horas',
 ] as const;
+
+export const regrasPlanos = {
+  'Light - Hora avulsa': { min: 1, max: 1, padrao: 1, bloqueioOnline: true },
+  'Standard - 2 a 4 horas': { min: 2, max: 4, padrao: 2, bloqueioOnline: true },
+  'Full - 5 a 8 horas': { min: 5, max: 8, padrao: 5, bloqueioOnline: true },
+  'Premium - acima de 9 horas': { min: 9, max: 12, padrao: 9, bloqueioOnline: true },
+} as const;
+
+export function getRegraPlano(plano: (typeof planosDisponiveis)[number]) {
+  return regrasPlanos[plano];
+}
+
+export function getDuracoesPlano(plano: (typeof planosDisponiveis)[number]): number[] {
+  const regra = getRegraPlano(plano);
+  return Array.from({ length: regra.max - regra.min + 1 }, (_, index) => regra.min + index);
+}

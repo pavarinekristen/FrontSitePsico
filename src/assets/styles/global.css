@@ -10,14 +10,18 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
   background: #edf2fb;
   font-family: 'Nunito Sans', system-ui, sans-serif;
   color: #12203f;
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {

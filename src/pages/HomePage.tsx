@@ -31,7 +31,7 @@ export function HomePage() {
         )}
       />
       <HeroSection lampOn={lampOn} onToggleLamp={() => setLampOn((current) => !current)} />
-      <section id="sobre" className="mx-auto grid max-w-6xl gap-10 px-5 py-20 md:px-8 lg:grid-cols-2 lg:items-center">
+      <section id="sobre" className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-5 md:px-8 md:py-20 lg:grid-cols-2 lg:items-center">
         <div className="grid grid-cols-2 gap-4">
           {[
             'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
@@ -52,7 +52,7 @@ export function HomePage() {
       <IncludedServices />
       <Testimonials />
       <FaqSection />
-      <section id="contato" className="mx-auto max-w-6xl px-5 py-24 md:px-8">
+      <section id="contato" className="mx-auto max-w-6xl px-4 py-16 sm:px-5 md:px-8 md:py-24">
         <div className="relative overflow-hidden rounded-[34px] text-white shadow-hero transition duration-300 hover:scale-[1.01]">
           <iframe
             title="Mapa do Instituto Ideia"
@@ -64,10 +64,10 @@ export function HomePage() {
             tabIndex={-1}
           />
           <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(15,38,87,0.95)_0%,rgba(26,62,139,0.86)_48%,rgba(15,38,87,0.44)_100%)]" />
-          <div className="relative grid gap-8 p-7 md:p-11 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+          <div className="relative grid gap-8 p-5 sm:p-7 md:p-11 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/20 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.12em] backdrop-blur"><span className="h-2 w-2 rounded-full bg-[#7CF29B] shadow-[0_0_0_4px_rgba(124,242,155,0.35)]" /> Checagem pelo WhatsApp</div>
-              <h2 className="mt-5 font-display text-5xl font-semibold leading-none text-white">Vamos<br />conversar?</h2>
+              <h2 className="mt-5 font-display text-4xl font-semibold leading-tight text-white md:text-5xl md:leading-none">Vamos<br />conversar?</h2>
               <p className="mt-4 max-w-md leading-7 text-white/90">Tire dúvidas, conheça o espaço ou solicite a checagem de disponibilidade pelo WhatsApp. Clique para copiar o contato.</p>
               <div className="mt-6 flex flex-col gap-3">
                 <ContactButton icon={<Phone size={22} className="text-[#25D366]" />} label="WhatsApp" value="+55 34 9971-0952" badge={copiedKey === 'phone' ? 'Copiado' : 'Copiar'} onClick={() => void copy('phone', getContactWhatsAppNumber())} />

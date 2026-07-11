@@ -82,7 +82,7 @@ export function Testimonials() {
   }
 
   return (
-    <section id="depoimentos" className="mx-auto max-w-6xl px-5 pt-24 md:px-8">
+    <section id="depoimentos" className="mx-auto max-w-6xl px-4 pt-16 sm:px-5 md:px-8 md:pt-24">
       <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <SectionHeading eyebrow="Quem atende aqui" title={<>O que os psicólogos <span className="rounded-md bg-title-mark px-1 text-brand-navy">dizem</span></>} />
         <div className="flex gap-2">
