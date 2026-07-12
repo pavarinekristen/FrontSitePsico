@@ -28,3 +28,12 @@ body {
   background: #2456c7;
   color: #ffffff;
 }
+
+.feedback-carousel-viewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.feedback-carousel-viewport::-webkit-scrollbar {
+  display: none;
+}

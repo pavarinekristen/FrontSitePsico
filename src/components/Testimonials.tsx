@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { SectionHeading } from './SectionHeading';
 
 const testimonials = [
@@ -55,30 +55,74 @@ const testimonials = [
   { quote: 'Para mim, o maior benefício é a tranquilidade: chego, atendo, finalizo e sigo minha agenda.', initials: 'IC', name: 'Igor C.', role: 'Psicólogo clínico' },
 ];
 
-const visibleCount = 3;
-
-function getVisibleTestimonials(startIndex: number) {
-  return Array.from({ length: visibleCount }, (_, offset) => testimonials[(startIndex + offset) % testimonials.length]!);
-}
+const carouselTestimonials = [...testimonials, ...testimonials];
 
 export function Testimonials() {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const visibleTestimonials = useMemo(() => getVisibleTestimonials(activeIndex), [activeIndex]);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const resetTimerRef = useRef<number | null>(null);
+
+  function getStepSize() {
+    const viewport = viewportRef.current;
+    const firstCard = viewport?.querySelector('figure');
+    if (!viewport || !firstCard) return 0;
+
+    const track = firstCard.parentElement;
+    const gap = track ? Number.parseFloat(window.getComputedStyle(track).columnGap || '0') : 0;
+    return firstCard.getBoundingClientRect().width + gap;
+  }
+
+  function normalizeScroll() {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const loopWidth = viewport.scrollWidth / 2;
+    if (viewport.scrollLeft >= loopWidth) {
+      viewport.scrollLeft -= loopWidth;
+    } else if (viewport.scrollLeft <= 0) {
+      viewport.scrollLeft += loopWidth;
+    }
+  }
+
+  function moveCarousel(direction: 1 | -1) {
+    const viewport = viewportRef.current;
+    const stepSize = getStepSize();
+    if (!viewport || !stepSize) return;
+
+    if (direction < 0 && viewport.scrollLeft <= stepSize) {
+      viewport.scrollLeft += viewport.scrollWidth / 2;
+    }
+
+    viewport.scrollBy({ left: direction * stepSize, behavior: 'smooth' });
+
+    if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = window.setTimeout(normalizeScroll, 650);
+  }
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      setActiveIndex((current) => (current + visibleCount) % testimonials.length);
-    }, 5000);
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
 
-    return () => window.clearInterval(intervalId);
+    const frameId = window.requestAnimationFrame(() => {
+      viewport.scrollLeft = Math.min(140, getStepSize() / 2 || 140);
+    });
+
+    const intervalId = window.setInterval(() => {
+      moveCarousel(1);
+    }, 3600);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearInterval(intervalId);
+      if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current);
+    };
   }, []);
 
   function goPrevious() {
-    setActiveIndex((current) => (current - visibleCount + testimonials.length) % testimonials.length);
+    moveCarousel(-1);
   }
 
   function goNext() {
-    setActiveIndex((current) => (current + visibleCount) % testimonials.length);
+    moveCarousel(1);
   }
 
   return (
@@ -95,24 +139,21 @@ export function Testimonials() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
-        {visibleTestimonials.map((item) => (
-          <figure key={item.name} className="m-0 flex flex-col gap-3 rounded-[22px] border border-brand-blue/15 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-hero sm:p-6 md:min-h-[260px] md:gap-4 md:p-7">
+      <div className="relative left-1/2 mt-10 w-screen -translate-x-1/2 overflow-hidden pb-5">
+        <div ref={viewportRef} className="feedback-carousel-viewport overflow-x-auto scroll-smooth">
+          <div className="flex w-max gap-5">
+            {carouselTestimonials.map((item, index) => (
+              <figure key={`${item.name}-${index}`} className="m-0 flex min-h-[260px] w-[clamp(280px,31vw,380px)] flex-none flex-col gap-3 rounded-[22px] border border-brand-blue/15 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-hero sm:p-6 md:gap-4 md:p-7">
             <div className="mt-2 font-display text-5xl leading-[0.5] text-brand-yellow">“</div>
             <blockquote className="m-0 text-sm leading-7 text-slate-700">{item.quote}</blockquote>
             <figcaption className="mt-auto flex items-center gap-3">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-blue font-display font-bold text-white">{item.initials}</span>
               <span><span className="block text-sm font-extrabold text-ink">{item.name}</span><span className="block text-xs text-slate-500">{item.role}</span></span>
             </figcaption>
-          </figure>
-        ))}
-      </div>
-
-      <div className="mt-5 hidden items-center justify-center gap-2 md:flex">
-        {Array.from({ length: Math.ceil(testimonials.length / visibleCount) }, (_, index) => {
-          const isActive = Math.floor(activeIndex / visibleCount) === index;
-          return <span key={index} className={isActive ? 'h-2.5 w-8 rounded-full bg-brand-blue transition-all' : 'h-2.5 w-2.5 rounded-full bg-brand-blue/20 transition-all'} />;
-        })}
+              </figure>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
