@@ -1,4 +1,4 @@
-import { BadgeCheck, CalendarCheck, CreditCard, DoorOpen, IdCard, SearchCheck, UserRoundPlus } from 'lucide-react';
+import { BadgeCheck, CalendarCheck, CheckCircle2, CreditCard, DoorOpen, SearchCheck, UserRoundPlus } from 'lucide-react';
 import { SectionHeading } from './SectionHeading';
 
 const steps = [
@@ -28,14 +28,14 @@ const steps = [
     description: 'O pagamento só entra depois da sala livre e do cadastro concluído.',
   },
   {
-    icon: IdCard,
-    title: 'Acesse sua área',
-    description: 'Depois da confirmação, o cliente ganha acesso à área logada do sistema.',
+    icon: CheckCircle2,
+    title: 'Consulta confirmada',
+    description: 'Após o pagamento, sua consulta é confirmada automaticamente — sem precisar acessar nenhum painel.',
   },
   {
     icon: CalendarCheck,
-    title: 'Reserva registrada',
-    description: 'A reserva é confirmada e registrada automaticamente no sistema.',
+    title: 'Verifique no calendário',
+    description: 'A reserva fica registrada e pode ser conferida diretamente no calendário de horários.',
   },
 ];
 

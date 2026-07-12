@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Nunito Sans', 'system-ui', 'sans-serif'],
-        display: ['Fredoka', 'Nunito Sans', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['ZT Nature', 'DM Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
         ink: '#12203F',
