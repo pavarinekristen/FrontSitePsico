@@ -36,30 +36,30 @@ export function AgendaCalendar({ selectedDate, onSelectDate }: AgendaCalendarPro
   }
 
   return (
-    <div className="rounded-xl border border-brand-blue/15 bg-white p-3">
+    <div className="rounded-xl border border-brand-blue/15 bg-white p-3 dark:border-white/10 dark:bg-night-card">
       <div className="mb-2 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={goPrevious}
           disabled={!canGoPrevious}
           aria-label="Mês anterior"
-          className="grid h-8 w-8 place-items-center rounded-full border border-brand-blue/15 bg-brand-soft text-brand-blue transition hover:bg-brand-bg disabled:cursor-not-allowed disabled:opacity-35"
+          className="grid h-8 w-8 place-items-center rounded-full border border-brand-blue/15 bg-brand-soft text-brand-blue transition hover:bg-brand-bg disabled:cursor-not-allowed disabled:opacity-35 dark:border-white/10 dark:bg-night-soft dark:text-brand-sky dark:hover:bg-white/10"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="font-display text-sm font-semibold capitalize text-ink">{monthLabel}</span>
+        <span className="font-display text-sm font-semibold capitalize text-ink dark:text-white">{monthLabel}</span>
         <button
           type="button"
           onClick={goNext}
           aria-label="Próximo mês"
-          className="grid h-8 w-8 place-items-center rounded-full border border-brand-blue/15 bg-brand-soft text-brand-blue transition hover:bg-brand-bg"
+          className="grid h-8 w-8 place-items-center rounded-full border border-brand-blue/15 bg-brand-soft text-brand-blue transition hover:bg-brand-bg dark:border-white/10 dark:bg-night-soft dark:text-brand-sky dark:hover:bg-white/10"
         >
           <ChevronRight size={16} />
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center">
         {weekDayLabels.map((label) => (
-          <span key={label} className="py-1 text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
+          <span key={label} className="py-1 text-[10px] font-extrabold uppercase tracking-wide text-slate-400 dark:text-slate-500">
             {label}
           </span>
         ))}
@@ -83,9 +83,9 @@ export function AgendaCalendar({ selectedDate, onSelectDate }: AgendaCalendarPro
               className={cn(
                 'grid h-9 place-items-center rounded-lg text-xs font-bold transition',
                 selected && 'bg-brand-blue text-white shadow-brand',
-                !selected && !disabled && 'text-brand-blue hover:bg-brand-soft',
+                !selected && !disabled && 'text-brand-blue hover:bg-brand-soft dark:text-brand-sky dark:hover:bg-night-soft',
                 !selected && isToday && 'ring-1 ring-inset ring-brand-yellow',
-                disabled && 'cursor-not-allowed text-slate-300',
+                disabled && 'cursor-not-allowed text-slate-300 dark:text-slate-600',
               )}
             >
               {Number(day.slice(8, 10))}

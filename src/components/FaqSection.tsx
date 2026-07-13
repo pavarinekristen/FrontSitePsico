@@ -22,13 +22,13 @@ export function FaqSection() {
         {faqs.map((faq, index) => {
           const open = openIndex === index;
           return (
-            <article key={faq.q} className={cn('overflow-hidden rounded-[18px] border bg-white shadow-card transition duration-300 hover:scale-[1.01] hover:shadow-hero', open ? 'border-brand-yellow/80' : 'border-brand-blue/15')}>
+            <article key={faq.q} className={cn('overflow-hidden rounded-[18px] border bg-white shadow-card transition duration-300 hover:scale-[1.01] hover:shadow-hero dark:bg-night-card', open ? 'border-brand-yellow/80' : 'border-brand-blue/15 dark:border-white/10')}>
               <button className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left" onClick={() => setOpenIndex(open ? null : index)}>
-                <span className="font-extrabold text-ink">{faq.q}</span>
-                <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full transition', open ? 'rotate-45 bg-brand-yellow text-ink' : 'bg-brand-soft text-brand-blue')}><Plus size={18} /></span>
+                <span className="font-extrabold text-ink dark:text-white">{faq.q}</span>
+                <span className={cn('grid h-8 w-8 shrink-0 place-items-center rounded-full transition', open ? 'rotate-45 bg-brand-yellow text-ink' : 'bg-brand-soft text-brand-blue dark:bg-night-soft dark:text-brand-sky')}><Plus size={18} /></span>
               </button>
               <div className={cn('grid transition-all duration-300', open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}>
-                <div className="overflow-hidden"><p className="px-5 pb-5 text-sm leading-7 text-slate-600">{faq.a}</p></div>
+                <div className="overflow-hidden"><p className="px-5 pb-5 text-sm leading-7 text-slate-600 dark:text-slate-300">{faq.a}</p></div>
               </div>
             </article>
           );

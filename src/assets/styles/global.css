@@ -38,6 +38,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+html.dark body {
+  background: #05080f;
+  color: #e4e9f4;
+}
+
 ::selection {
   background: #2456c7;
   color: #ffffff;

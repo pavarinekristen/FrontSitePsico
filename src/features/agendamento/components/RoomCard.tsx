@@ -21,10 +21,9 @@ export function RoomCard({ sala, selected, onSelect, offset = false }: RoomCardP
           {sala.imagens.map((image) => <img key={image.src} src={image.src} alt={image.alt} className="h-full w-full shrink-0 object-cover transition duration-700 group-hover:scale-105" loading="lazy" />)}
         </div>
         <div className="pointer-events-none absolute inset-0 bg-room-card" />
-        <div className="pointer-events-none absolute right-4 top-0 font-display text-7xl font-bold leading-none text-transparent [-webkit-text-stroke:2px_rgba(255,255,255,0.55)] md:text-8xl">{sala.numero.replace('Sala ', '')}</div>
-        <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/35 bg-white/15 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-white backdrop-blur">{sala.numero} · {sala.categoria}</div>
+        <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-white/35 bg-white/15 px-5 py-2.5 text-sm font-extrabold uppercase tracking-[0.14em] text-white backdrop-blur">{sala.numero} · {sala.categoria}</div>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-3 p-5 text-white">
-          <h3 className="font-display text-3xl font-semibold">{sala.titulo}</h3>
+          <h3 className="font-display text-4xl font-semibold">{sala.titulo}</h3>
           <p className="max-w-md text-sm leading-6 text-white/85">{sala.descricao}</p>
           <div className="flex flex-wrap gap-2">{sala.recursos.map((recurso) => <span key={recurso} className="rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-xs font-bold backdrop-blur">{recurso}</span>)}</div>
           <div className="mt-2 flex items-center justify-between gap-3">

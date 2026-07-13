@@ -311,31 +311,31 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
   }
 
   return (
-    <div id="cadastro" className="mt-12 scroll-mt-28 grid overflow-hidden rounded-3xl border border-brand-blue/15 shadow-hero transition duration-300 hover:scale-[1.01] lg:grid-cols-[1.35fr_0.65fr]">
-      <form onSubmit={submit} className="bg-white p-5 sm:p-6 md:p-8">
-        <h3 className="font-display text-2xl font-semibold text-ink">Cadastro para disponibilidade</h3>
-        <p className="mt-1 text-sm text-slate-600">Escolha o plano, a sala, a data e o horário pretendido. A disponibilidade e o cadastro vêm antes do pagamento.</p>
+    <div id="cadastro" className="mt-12 scroll-mt-28 grid overflow-hidden rounded-3xl border border-brand-blue/15 shadow-hero transition duration-300 hover:scale-[1.01] dark:border-white/10 lg:grid-cols-[1.35fr_0.65fr]">
+      <form onSubmit={submit} className="bg-white p-5 dark:bg-night-card sm:p-6 md:p-8">
+        <h3 className="font-display text-2xl font-semibold text-ink dark:text-white">Cadastro para disponibilidade</h3>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Escolha o plano, a sala, a data e o horário pretendido. A disponibilidade e o cadastro vêm antes do pagamento.</p>
         <fieldset className="mt-6">
-          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Sala escolhida</legend>
+          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Sala escolhida</legend>
           <div className="grid gap-3 md:grid-cols-2">
             {salas.map((sala) => {
               const active = data.salaId === sala.id;
-              return <button key={sala.id} type="button" onClick={() => selectSala(sala.id)} className={cn('rounded-xl border px-4 py-3 text-sm font-extrabold transition', active ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-blue/20 bg-brand-soft text-brand-blue hover:bg-white')}>{sala.numero} · {sala.nome}</button>;
+              return <button key={sala.id} type="button" onClick={() => selectSala(sala.id)} className={cn('rounded-xl border px-4 py-3 text-sm font-extrabold transition', active ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-blue/20 bg-brand-soft text-brand-blue hover:bg-white dark:border-white/15 dark:bg-night-soft dark:text-brand-sky dark:hover:bg-white/10')}>{sala.numero} · {sala.nome}</button>;
             })}
           </div>
         </fieldset>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <label className="block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Nome completo</span><input className="w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white" value={data.nomeCompleto} onChange={(event) => setData((current) => ({ ...current, nomeCompleto: event.target.value }))} placeholder="Seu nome" /></label>
+          <label className="block"><span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Nome completo</span><input className="w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white dark:border-white/15 dark:bg-night-soft dark:text-white dark:placeholder:text-slate-500 dark:focus:border-brand-sky dark:focus:bg-night-soft" value={data.nomeCompleto} onChange={(event) => setData((current) => ({ ...current, nomeCompleto: event.target.value }))} placeholder="Seu nome" /></label>
           <label className="block">
-            <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">WhatsApp</span>
+            <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">WhatsApp</span>
             <input
               type="tel"
               inputMode="numeric"
               autoComplete="tel-national"
               maxLength={15}
               className={cn(
-                'w-full rounded-xl border bg-brand-soft px-4 py-3 text-ink outline-none transition focus:bg-white',
-                fieldErrors.whatsapp ? 'border-red-400 focus:border-red-500' : 'border-brand-blue/20 focus:border-brand-blue',
+                'w-full rounded-xl border bg-brand-soft px-4 py-3 text-ink outline-none transition focus:bg-white dark:bg-night-soft dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-night-soft',
+                fieldErrors.whatsapp ? 'border-red-400 focus:border-red-500' : 'border-brand-blue/20 focus:border-brand-blue dark:border-white/15 dark:focus:border-brand-sky',
               )}
               value={data.whatsapp}
               onChange={(event) => handleWhatsappChange(event.target.value)}
@@ -348,13 +348,13 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-[0.55fr_1fr]">
           <label className="block">
-            <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">CRP</span>
+            <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">CRP</span>
             <input
               inputMode="numeric"
               maxLength={10}
               className={cn(
-                'w-full rounded-xl border bg-brand-soft px-4 py-3 text-ink outline-none transition focus:bg-white',
-                fieldErrors.crp ? 'border-red-400 focus:border-red-500' : 'border-brand-blue/20 focus:border-brand-blue',
+                'w-full rounded-xl border bg-brand-soft px-4 py-3 text-ink outline-none transition focus:bg-white dark:bg-night-soft dark:text-white dark:placeholder:text-slate-500 dark:focus:bg-night-soft',
+                fieldErrors.crp ? 'border-red-400 focus:border-red-500' : 'border-brand-blue/20 focus:border-brand-blue dark:border-white/15 dark:focus:border-brand-sky',
               )}
               value={data.crp}
               onChange={(event) => handleCrpChange(event.target.value)}
@@ -365,9 +365,9 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
             {fieldErrors.crp ? <span className="mt-1.5 block text-xs font-bold text-red-600">{fieldErrors.crp}</span> : null}
           </label>
           <label className="block">
-            <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Abordagem de trabalho</span>
+            <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Abordagem de trabalho</span>
             <input
-              className="w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white"
+              className="w-full rounded-xl border border-brand-blue/20 bg-brand-soft px-4 py-3 text-ink outline-none transition focus:border-brand-blue focus:bg-white dark:border-white/15 dark:bg-night-soft dark:text-white dark:placeholder:text-slate-500 dark:focus:border-brand-sky dark:focus:bg-night-soft"
               value={data.abordagemTrabalho}
               onChange={(event) => setData((current) => ({ ...current, abordagemTrabalho: event.target.value }))}
               placeholder="TCC, psicanálise, humanista..."
@@ -375,7 +375,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
           </label>
         </div>
         <fieldset className="mt-5">
-          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Público atendido</legend>
+          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Público atendido</legend>
           <div className="grid gap-2 md:grid-cols-3">
             {PUBLICOS_ATENDIDOS.map((publico) => {
               const active = data.publicosAtendidos.includes(publico);
@@ -389,7 +389,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
                       ? current.publicosAtendidos.filter((item) => item !== publico)
                       : [...current.publicosAtendidos, publico],
                   }))}
-                  className={cn('rounded-xl border px-3 py-3 text-left text-sm font-bold transition', active ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-blue/20 bg-brand-soft text-brand-blue')}
+                  className={cn('rounded-xl border px-3 py-3 text-left text-sm font-bold transition', active ? 'border-brand-blue bg-brand-blue text-white' : 'border-brand-blue/20 bg-brand-soft text-brand-blue dark:border-white/15 dark:bg-night-soft dark:text-brand-sky')}
                 >
                   {publico}
                 </button>
@@ -398,24 +398,24 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
           </div>
         </fieldset>
         <fieldset className="mt-5">
-          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Plano desejado</legend>
+          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Plano desejado</legend>
           <div className="grid gap-2 md:grid-cols-2">
             {planosDisponiveis.map((plano) => {
               const active = data.plano === plano;
-              return <button key={plano} type="button" onClick={() => selectPlan(plano as PlanoAgendamento)} className={cn('rounded-xl border px-3 py-3 text-left text-sm font-bold transition', active ? 'border-[#E7A70E] bg-brand-yellow text-ink' : 'border-brand-blue/20 bg-brand-soft text-brand-blue')}>{plano}</button>;
+              return <button key={plano} type="button" onClick={() => selectPlan(plano as PlanoAgendamento)} className={cn('rounded-xl border px-3 py-3 text-left text-sm font-bold transition', active ? 'border-[#E7A70E] bg-brand-yellow text-ink' : 'border-brand-blue/20 bg-brand-soft text-brand-blue dark:border-white/15 dark:bg-night-soft dark:text-brand-sky')}>{plano}</button>;
             })}
           </div>
         </fieldset>
-        <p className="mt-3 rounded-xl border border-brand-blue/15 bg-brand-soft px-4 py-3 text-sm font-bold text-brand-blue">
+        <p className="mt-3 rounded-xl border border-brand-blue/15 bg-brand-soft px-4 py-3 text-sm font-bold text-brand-blue dark:border-white/15 dark:bg-night-soft dark:text-brand-sky">
           Plano selecionado: marque {regraPlano.min === regraPlano.max ? `${regraPlano.min} horário` : `de ${regraPlano.min} a ${regraPlano.max} horários`} livres na agenda.
-          <span className="mt-1 block text-xs text-slate-600">Cancelamentos ou remarcações devem ser solicitados com no mínimo 48h de antecedência.</span>
+          <span className="mt-1 block text-xs text-slate-600 dark:text-slate-400">Cancelamentos ou remarcações devem ser solicitados com no mínimo 48h de antecedência.</span>
         </p>
         <fieldset className="mt-5">
-          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Data e horário pretendido</legend>
-          <div className="rounded-2xl border border-brand-blue/15 bg-brand-soft p-4">
+          <legend className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Data e horário pretendido</legend>
+          <div className="rounded-2xl border border-brand-blue/15 bg-brand-soft p-4 dark:border-white/10 dark:bg-night-soft">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 text-sm font-extrabold text-brand-blue"><CalendarDays size={18} /> Agenda do dia {formatDateLabel(data.data)}</div>
-              <span className={cn('inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-extrabold', agendaState === 'online' ? 'bg-[#DDFBE8] text-[#147A3B]' : agendaState === 'loading' ? 'bg-white text-brand-blue' : 'bg-white text-slate-500')}>
+              <div className="inline-flex items-center gap-2 text-sm font-extrabold text-brand-blue dark:text-brand-sky"><CalendarDays size={18} /> Agenda do dia {formatDateLabel(data.data)}</div>
+              <span className={cn('inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-extrabold', agendaState === 'online' ? 'bg-[#DDFBE8] text-[#147A3B] dark:bg-[#12321F] dark:text-[#5BD98A]' : agendaState === 'loading' ? 'bg-white text-brand-blue dark:bg-night-card dark:text-brand-sky' : 'bg-white text-slate-500 dark:bg-night-card dark:text-slate-400')}>
                 {agendaState === 'loading' ? <RefreshCw size={14} className="animate-spin" /> : null}
                 {agendaState === 'online' ? 'Agenda online' : agendaState === 'loading' ? 'Carregando' : 'Modo local'}
               </span>
@@ -436,9 +436,9 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
                         onClick={() => toggleCalendarSlot(slot)}
                         className={cn(
                           'min-h-[64px] rounded-xl border px-3 py-2.5 text-left text-sm font-bold transition',
-                          active && 'border-brand-blue bg-brand-blue text-white',
-                          !active && slot.available && 'border-brand-blue/20 bg-white text-brand-blue hover:border-brand-blue hover:bg-white',
-                          !slot.available && 'cursor-not-allowed border-red-200 bg-red-50 text-red-400',
+                          active && 'border-brand-blue bg-brand-blue text-white dark:border-brand-sky',
+                          !active && slot.available && 'border-brand-blue/20 bg-white text-brand-blue hover:border-brand-blue hover:bg-white dark:border-white/15 dark:bg-night-card dark:text-brand-sky dark:hover:border-brand-sky dark:hover:bg-night-card',
+                          !slot.available && 'cursor-not-allowed border-red-200 bg-red-50 text-red-400 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400',
                         )}
                       >
                         <span className="block text-base">{slot.label}</span>
@@ -447,18 +447,18 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
                     );
                   })}
                 </div>
-                {agendaState === 'online' && agendaSlots.length === 0 ? <p className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-600">Nenhum horário foi gerado para essa sala nesta data.</p> : null}
+                {agendaState === 'online' && agendaSlots.length === 0 ? <p className="rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-600 dark:bg-night-card dark:text-slate-300">Nenhum horário foi gerado para essa sala nesta data.</p> : null}
                 <div className="mt-auto flex flex-wrap gap-2 pt-4 text-[11px] font-extrabold">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[#147A3B]"><span className="h-2 w-2 rounded-full bg-[#25A45B]" /> Livre</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-red-600"><span className="h-2 w-2 rounded-full bg-red-500" /> Ocupado</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-brand-blue"><span className="h-2 w-2 rounded-full bg-brand-blue" /> Selecionado</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[#147A3B] dark:bg-night-card dark:text-[#5BD98A]"><span className="h-2 w-2 rounded-full bg-[#25A45B]" /> Livre</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-red-600 dark:bg-night-card dark:text-red-400"><span className="h-2 w-2 rounded-full bg-red-500" /> Ocupado</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-brand-blue dark:bg-night-card dark:text-brand-sky"><span className="h-2 w-2 rounded-full bg-brand-sky" /> Selecionado</span>
                 </div>
               </div>
             </div>
           </div>
         </fieldset>
-        <div className="mt-6 rounded-2xl border border-brand-blue/15 bg-brand-soft p-4 sm:p-5">
-          <h4 className="text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue">Confira sua solicitação</h4>
+        <div className="mt-6 rounded-2xl border border-brand-blue/15 bg-brand-soft p-4 dark:border-white/10 dark:bg-night-soft sm:p-5">
+          <h4 className="text-xs font-extrabold uppercase tracking-[0.1em] text-brand-blue dark:text-brand-sky">Confira sua solicitação</h4>
           <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             <ConfirmationItem label="Sala" value={selectedSala ? `${selectedSala.numero} · ${selectedSala.nome}` : 'A escolher'} />
             <ConfirmationItem label="Plano" value={data.plano} />
@@ -467,15 +467,15 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
             <ConfirmationItem label="WhatsApp" value={data.whatsapp.trim() || 'A preencher'} />
             <ConfirmationItem label="CRP" value={data.crp.trim() || 'A preencher'} />
           </dl>
-          <ul className="mt-4 space-y-1.5 border-t border-brand-blue/10 pt-3 text-xs leading-5 text-slate-600">
+          <ul className="mt-4 space-y-1.5 border-t border-brand-blue/10 pt-3 text-xs leading-5 text-slate-600 dark:border-white/10 dark:text-slate-300">
             <li>Seus dados serão enviados para o WhatsApp da clínica para verificação e confirmação da reserva.</li>
             <li>Nenhum pagamento é feito no site: o PIX é combinado pelo WhatsApp após a confirmação.</li>
             <li>
               Cancelamentos e remarcações devem ser solicitados com no mínimo 48h de antecedência. Consulte as condições
-              completas nos <Link to="/termos-de-uso#cancelamento" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-blue underline">Termos de Uso</Link>.
+              completas nos <Link to="/termos-de-uso#cancelamento" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-blue underline dark:text-brand-sky">Termos de Uso</Link>.
             </li>
           </ul>
-          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-brand-blue/15 bg-white p-3">
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-brand-blue/15 bg-white p-3 dark:border-white/10 dark:bg-night-card">
             <input
               type="checkbox"
               checked={aceiteLegal}
@@ -488,16 +488,16 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
               aria-label="Aceito os Termos de Uso e a Política de Privacidade"
               className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-brand-blue focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-yellow"
             />
-            <span className="text-xs leading-5 text-slate-600">
-              Li e aceito os <Link to="/termos-de-uso" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-blue underline">Termos de Uso</Link> e a{' '}
-              <Link to="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-blue underline">Política de Privacidade</Link>. Entendo que meus
+            <span className="text-xs leading-5 text-slate-600 dark:text-slate-300">
+              Li e aceito os <Link to="/termos-de-uso" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-blue underline dark:text-brand-sky">Termos de Uso</Link> e a{' '}
+              <Link to="/politica-de-privacidade" target="_blank" rel="noopener noreferrer" className="font-bold text-brand-blue underline dark:text-brand-sky">Política de Privacidade</Link>. Entendo que meus
               dados serão usados para solicitar e confirmar a reserva, enviados para o WhatsApp da clínica e que
               cancelamentos/remarcações seguem a política informada.
             </span>
           </label>
         </div>
-        {formError ? <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{formError}</p> : null}
-        <p className="mt-4 flex items-center justify-center gap-2 text-center text-xs font-bold text-slate-600"><Lock size={14} className="shrink-0 text-brand-blue" /> Ao continuar, sua solicitação será enviada para o WhatsApp da clínica. Nenhum pagamento é feito neste site.</p>
+        {formError ? <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300">{formError}</p> : null}
+        <p className="mt-4 flex items-center justify-center gap-2 text-center text-xs font-bold text-slate-600 dark:text-slate-300"><Lock size={14} className="shrink-0 text-brand-blue dark:text-brand-sky" /> Ao continuar, sua solicitação será enviada para o WhatsApp da clínica. Nenhum pagamento é feito neste site.</p>
         <button
           type="submit"
           disabled={!aceiteLegal}
@@ -505,7 +505,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
         >
           <Send size={19} /> Solicitar reserva no WhatsApp
         </button>
-        {!aceiteLegal ? <p className="mt-2 text-center text-xs font-bold text-slate-500">Marque o aceite acima para habilitar o envio.</p> : null}
+        {!aceiteLegal ? <p className="mt-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400">Marque o aceite acima para habilitar o envio.</p> : null}
       </form>
       <aside className="relative flex flex-col bg-brand-navy p-5 text-white sm:p-7 md:p-8">
         <div className="text-xs font-extrabold uppercase tracking-[0.12em] text-brand-yellow">Resumo da solicitação</div>
@@ -582,8 +582,8 @@ interface ConfirmationItemProps {
 function ConfirmationItem({ label, value, wide = false }: ConfirmationItemProps) {
   return (
     <div className={cn(wide && 'sm:col-span-2')}>
-      <dt className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-500">{label}</dt>
-      <dd className="m-0 font-bold text-ink">{value}</dd>
+      <dt className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="m-0 font-bold text-ink dark:text-white">{value}</dd>
     </div>
   );
 }

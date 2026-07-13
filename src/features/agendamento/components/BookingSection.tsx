@@ -15,7 +15,7 @@ export function BookingSection({ selectedPlan, onSelectPlan }: BookingSectionPro
 
   return (
     <section id="salas" className="mx-auto max-w-6xl px-4 py-16 sm:px-5 md:px-8 md:py-24">
-      <SectionHeading eyebrow="Salas & disponibilidade" title={<>Verifique sua sala <span className="rounded-md bg-title-mark px-1 text-brand-navy">sem pagar antes</span></>} description="Veja as fotos, escolha plano, sala, data e horário. A disponibilidade e o cadastro são conferidos antes do pagamento." />
+      <SectionHeading className="max-w-none" eyebrow="Salas & disponibilidade" title={<span className="lg:whitespace-nowrap">Verifique sua sala <span className="whitespace-nowrap rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">sem pagar antes</span></span>} description="Veja as fotos, escolha plano, sala, data e horário. A disponibilidade e o cadastro são conferidos antes do pagamento." />
       <div className="mt-12 grid items-start gap-7 lg:grid-cols-2">
         {salas.map((sala, index) => <RoomCard key={sala.id} sala={sala} selected={selectedSalaId === sala.id} onSelect={setSelectedSalaId} offset={index === 1} />)}
       </div>

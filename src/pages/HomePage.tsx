@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AtSign, MapPin, Phone, Star } from 'lucide-react';
 import { BenefitsSection } from '../components/BenefitsSection';
 import { FaqSection } from '../components/FaqSection';
@@ -19,17 +19,17 @@ const mapsUrl = 'https://www.google.com/maps?q=R.%20Francisco%20Sales%2C%201341%
 
 export function HomePage() {
   const { copiedKey, copy } = useClipboard();
-  const [lampOn, setLampOn] = useState(true);
+  const [lampOn, setLampOn] = useState(() => localStorage.getItem('ideia-theme') !== 'dark');
   const [selectedPlan, setSelectedPlan] = useState<PlanoAgendamento>('Light - Hora avulsa');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', !lampOn);
+    localStorage.setItem('ideia-theme', lampOn ? 'light' : 'dark');
+  }, [lampOn]);
 
   return (
     <MainLayout>
-      <div
-        className={cn(
-          'pointer-events-none fixed inset-0 z-[60] transition duration-700',
-          lampOn ? 'bg-[#fff3ad]/20 mix-blend-screen' : 'bg-[#020817]/55 backdrop-brightness-75',
-        )}
-      />
+      <div className={cn('pointer-events-none fixed inset-0 z-[60] transition duration-700', lampOn ? 'bg-[#fff3ad]/20 mix-blend-screen' : 'opacity-0')} />
       <HeroSection lampOn={lampOn} onToggleLamp={() => setLampOn((current) => !current)} />
       <section id="sobre" className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-5 md:px-8 md:py-20 lg:grid-cols-2 lg:items-center">
         <div className="grid grid-cols-2 gap-4">
@@ -37,12 +37,12 @@ export function HomePage() {
             'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80',
             'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=80',
             'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=900&q=80',
-          ].map((src, index) => <img key={src} src={src} alt={`Ambiente do Instituto Ideia ${index + 1}`} className={index === 0 ? 'col-span-2 h-56 w-full rounded-[20px] border-4 border-white object-cover shadow-card transition duration-300 hover:scale-[1.02] hover:shadow-hero' : 'h-48 w-full rounded-[20px] border-4 border-white object-cover shadow-card transition duration-300 hover:scale-[1.02] hover:shadow-hero'} loading="lazy" />)}
+          ].map((src, index) => <img key={src} src={src} alt={`Ambiente do Instituto Ideia ${index + 1}`} className={index === 0 ? 'col-span-2 h-56 w-full rounded-[20px] border-4 border-white object-cover shadow-card transition duration-300 hover:scale-[1.02] hover:shadow-hero dark:border-white/10' : 'h-48 w-full rounded-[20px] border-4 border-white object-cover shadow-card transition duration-300 hover:scale-[1.02] hover:shadow-hero dark:border-white/10'} loading="lazy" />)}
         </div>
         <div>
-          <SectionHeading eyebrow="Sobre o IDEIA" title={<>Um espaço feito para a psicologia <span className="rounded-md bg-title-mark px-1 text-brand-navy">acontecer.</span></>} description="O Instituto Ideia nasceu para resolver um problema real de quem atende: encontrar um espaço profissional, acolhedor e sem burocracia." />
-          <blockquote className="mt-6 border-l-4 border-brand-yellow pl-5 font-display text-2xl font-medium leading-snug text-ink">Nossa missão é simples: cuidar da estrutura para que você cuide das pessoas.</blockquote>
-          <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-bold text-brand-blue md:justify-start">{['Região central', 'Salas equipadas', 'Reserva por hora'].map((tag) => <span key={tag} className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-4 py-2">{tag}</span>)}</div>
+          <SectionHeading eyebrow="Sobre o IDEIA" title={<>Um espaço feito para a psicologia <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">acontecer.</span></>} description="O Instituto Ideia nasceu para resolver um problema real de quem atende: encontrar um espaço profissional, acolhedor e sem burocracia." />
+          <blockquote className="mt-6 border-l-4 border-brand-yellow pl-5 font-display text-2xl font-medium leading-snug text-ink dark:text-white">Nossa missão é simples: cuidar da estrutura para que você cuide das pessoas.</blockquote>
+          <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-bold text-brand-blue dark:text-brand-sky md:justify-start">{['Região central', 'Salas equipadas', 'Reserva por hora'].map((tag) => <span key={tag} className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-4 py-2 dark:border-brand-sky/25 dark:bg-brand-sky/10">{tag}</span>)}</div>
         </div>
       </section>
       <BenefitsSection />

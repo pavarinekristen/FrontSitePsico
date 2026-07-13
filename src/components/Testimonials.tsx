@@ -128,12 +128,12 @@ export function Testimonials() {
   return (
     <section id="depoimentos" className="mx-auto max-w-6xl px-4 pt-16 sm:px-5 md:px-8 md:pt-24">
       <div className="flex flex-col items-center gap-5 md:flex-row md:items-end md:justify-between">
-        <SectionHeading eyebrow="Quem atende aqui" title={<>O que os psicólogos <span className="rounded-md bg-title-mark px-1 text-brand-navy">dizem</span></>} />
+        <SectionHeading eyebrow="Quem atende aqui" title={<>O que os psicólogos <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">dizem</span></>} />
         <div className="flex gap-2">
-          <button type="button" onClick={goPrevious} aria-label="Feedbacks anteriores" className="grid h-11 w-11 place-items-center rounded-full border border-brand-blue/15 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
+          <button type="button" onClick={goPrevious} aria-label="Feedbacks anteriores" className="grid h-11 w-11 place-items-center rounded-full border border-brand-blue/15 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:shadow-card dark:border-white/10 dark:bg-night-card dark:text-brand-sky">
             <ChevronLeft size={19} />
           </button>
-          <button type="button" onClick={goNext} aria-label="Próximos feedbacks" className="grid h-11 w-11 place-items-center rounded-full border border-brand-blue/15 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:shadow-card">
+          <button type="button" onClick={goNext} aria-label="Próximos feedbacks" className="grid h-11 w-11 place-items-center rounded-full border border-brand-blue/15 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:shadow-card dark:border-white/10 dark:bg-night-card dark:text-brand-sky">
             <ChevronRight size={19} />
           </button>
         </div>
@@ -143,12 +143,12 @@ export function Testimonials() {
         <div ref={viewportRef} className="feedback-carousel-viewport overflow-x-auto scroll-smooth">
           <div className="flex w-max gap-5">
             {carouselTestimonials.map((item, index) => (
-              <figure key={`${item.name}-${index}`} className="m-0 flex min-h-[260px] w-[clamp(280px,31vw,380px)] flex-none flex-col gap-3 rounded-[22px] border border-brand-blue/15 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-hero sm:p-6 md:gap-4 md:p-7">
+              <figure key={`${item.name}-${index}`} className="m-0 flex min-h-[260px] w-[clamp(280px,31vw,380px)] flex-none flex-col gap-3 rounded-[22px] border border-brand-blue/15 bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-hero dark:border-white/10 dark:bg-night-card sm:p-6 md:gap-4 md:p-7">
             <div className="mt-2 font-display text-5xl leading-[0.5] text-brand-yellow">“</div>
-            <blockquote className="m-0 text-sm leading-7 text-slate-700">{item.quote}</blockquote>
+            <blockquote className="m-0 text-sm leading-7 text-slate-700 dark:text-slate-300">{item.quote}</blockquote>
             <figcaption className="mt-auto flex items-center gap-3">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-brand-blue font-display font-bold text-white">{item.initials}</span>
-              <span><span className="block text-sm font-extrabold text-ink">{item.name}</span><span className="block text-xs text-slate-500">{item.role}</span></span>
+              <span><span className="block text-sm font-extrabold text-ink dark:text-white">{item.name}</span><span className="block text-xs text-slate-500 dark:text-slate-400">{item.role}</span></span>
             </figcaption>
               </figure>
             ))}

@@ -7,5 +7,5 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children }: MainLayoutProps) {
-  return <div className="min-h-screen overflow-x-hidden bg-brand-bg text-ink antialiased"><Header /><main>{children}</main><Footer /></div>;
+  return <div className="min-h-screen overflow-x-hidden bg-brand-bg text-ink antialiased transition-colors duration-500 dark:bg-night-bg dark:text-slate-100"><Header /><main>{children}</main><Footer /></div>;
 }

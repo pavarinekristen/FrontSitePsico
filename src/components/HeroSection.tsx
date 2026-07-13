@@ -11,10 +11,10 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
-  const [pullCount, setPullCount] = useState(0);
+  const [toggleCount, setToggleCount] = useState(0);
 
-  function handleCordPull() {
-    setPullCount((count) => count + 1);
+  function handleLampClick() {
+    setToggleCount((count) => count + 1);
     window.setTimeout(onToggleLamp, 180);
   }
 
@@ -27,7 +27,7 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
               Aluguel de salas para psicólogos
             </motion.span>
             <motion.h1 variants={reveal} className={cn('mx-auto mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-normal md:mx-0 md:text-6xl md:leading-none', lampOn ? 'text-ink' : 'text-white')}>
-              Seu espaço de atendimento, <span className="rounded-md bg-title-mark px-1 text-brand-navy">pronto para usar.</span>
+              Seu espaço de atendimento, <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">pronto para usar.</span>
             </motion.h1>
             <motion.p variants={reveal} className={cn('mx-auto mt-5 max-w-xl text-lg leading-8 md:mx-0', lampOn ? 'text-slate-700' : 'text-white/75')}>
               Salas equipadas por hora ou período, no centro de Uberlândia. Escolha o plano, confira a disponibilidade e só pague depois da validação.
@@ -51,59 +51,30 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
             <motion.div
               animate={{ y: [0, -14, 0], rotate: [-4, 4, -4] }}
               transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative grid place-items-center overflow-visible"
+              className="relative grid translate-y-[23px] place-items-center overflow-visible md:translate-y-[43px]"
             >
               <motion.div
-                key={pullCount}
-                animate={pullCount === 0 ? { y: 0, rotate: 0 } : { y: [0, 20, -10, 6, 0], rotate: [0, -9, 8, -4, 0] }}
+                key={toggleCount}
+                animate={toggleCount === 0 ? { y: 0, rotate: 0 } : { y: [0, 20, -10, 6, 0], rotate: [0, -9, 8, -4, 0] }}
                 transition={{ duration: 0.78, ease: [0.22, 0.85, 0.25, 1] }}
                 className="relative grid place-items-center overflow-visible"
               >
                 <button
                   type="button"
-                  onClick={handleCordPull}
-                  aria-pressed={lampOn}
-                  aria-label={lampOn ? 'Tocar na lâmpada para apagar' : 'Tocar na lâmpada para acender'}
-                  className="cursor-pointer outline-none md:pointer-events-none"
+                  onClick={handleLampClick}
+                  aria-pressed={!lampOn}
+                  aria-label={lampOn ? 'Tocar na lâmpada para ativar o modo noturno' : 'Tocar na lâmpada para voltar ao modo claro'}
+                  title={lampOn ? 'Ativar modo noturno' : 'Voltar ao modo claro'}
+                  className="cursor-pointer outline-none"
                 >
                   <AnimatedLightbulb lampOn={lampOn} />
                 </button>
-                <PullCord lampOn={lampOn} onPull={handleCordPull} />
               </motion.div>
             </motion.div>
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-interface PullCordProps {
-  lampOn: boolean;
-  onPull: () => void;
-}
-
-function PullCord({ lampOn, onPull }: PullCordProps) {
-  return (
-    <motion.button
-      type="button"
-      onClick={onPull}
-      aria-pressed={lampOn}
-      aria-label={lampOn ? 'Puxar corda para apagar lâmpada' : 'Puxar corda para acender lâmpada'}
-      className="absolute z-50 hidden h-48 w-20 items-start justify-center outline-none md:flex"
-      style={{ left: 'calc(50% + 34px)', top: 246 }}
-      animate={{ y: [0, 5, 0], rotate: [-1.5, 1.5, -1.5] }}
-      transition={{ duration: 2.7, repeat: Infinity, ease: 'easeInOut' }}
-      whileHover={{ scale: 1.04 }}
-      whileTap={{ y: 18, scale: 0.98 }}
-    >
-      <svg width="74" height="188" viewBox="0 0 74 188" fill="none" className="overflow-visible drop-shadow-[0_8px_10px_rgba(0,0,0,0.28)]">
-        <path d="M34 2 C34 36 42 57 37 85 C32 113 24 132 31 160" stroke="#D9BE8F" strokeWidth="6" strokeLinecap="round" />
-        <path d="M40 2 C40 36 48 57 43 85 C38 113 30 132 37 160" stroke="#B89157" strokeWidth="2.4" strokeLinecap="round" opacity="0.65" />
-        <path d="M30 158 C24 166 25 177 35 182 C45 177 46 166 40 158 C37 162 33 162 30 158Z" fill="#D9BE8F" stroke="#9A733E" strokeWidth="2" />
-        <path d="M30 169 C34 172 38 172 42 169" stroke="#9A733E" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    </motion.button>
   );
 }
 
