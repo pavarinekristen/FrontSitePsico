@@ -27,7 +27,7 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
               Aluguel de salas para psicólogos
             </motion.span>
             <motion.h1 variants={reveal} className={cn('mx-auto mt-4 max-w-3xl font-display text-4xl font-semibold leading-[1.1] tracking-normal md:mx-0 md:text-6xl md:leading-none', lampOn ? 'text-ink' : 'text-white')}>
-              Seu espaço de atendimento, <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">pronto para usar.</span>
+              Seu espaço de atendimento, <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:text-white">pronto para usar.</span>
             </motion.h1>
             <motion.p variants={reveal} className={cn('mx-auto mt-5 max-w-xl text-lg leading-8 md:mx-0', lampOn ? 'text-slate-700' : 'text-white/75')}>
               Salas equipadas por hora ou período, no centro de Uberlândia. Escolha o plano, confira a disponibilidade e só pague depois da validação.

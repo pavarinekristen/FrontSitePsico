@@ -49,7 +49,7 @@ export function PlansSection({ selectedPlan, onSelectPlan }: PlansSectionProps) 
       <div className="mx-auto max-w-6xl px-4 sm:px-5 md:px-8">
         <SectionHeading
           eyebrow="Planos e valores"
-          title={<>Escolha o plano antes de <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">verificar a agenda</span></>}
+          title={<>Escolha o plano antes de <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:text-white">verificar a agenda</span></>}
           description="Os valores são organizados por faixa de uso. A confirmação do pagamento só acontece depois da checagem de disponibilidade e do cadastro."
         />
         <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">

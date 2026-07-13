@@ -128,7 +128,7 @@ export function Testimonials() {
   return (
     <section id="depoimentos" className="mx-auto max-w-6xl px-4 pt-16 sm:px-5 md:px-8 md:pt-24">
       <div className="flex flex-col items-center gap-5 md:flex-row md:items-end md:justify-between">
-        <SectionHeading eyebrow="Quem atende aqui" title={<>O que os psicólogos <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">dizem</span></>} />
+        <SectionHeading eyebrow="Quem atende aqui" title={<>O que os psicólogos <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:text-white">dizem</span></>} />
         <div className="flex gap-2">
           <button type="button" onClick={goPrevious} aria-label="Feedbacks anteriores" className="grid h-11 w-11 place-items-center rounded-full border border-brand-blue/15 bg-white text-brand-blue shadow-sm transition hover:-translate-y-0.5 hover:shadow-card dark:border-white/10 dark:bg-night-card dark:text-brand-sky">
             <ChevronLeft size={19} />

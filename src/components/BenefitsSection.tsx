@@ -30,7 +30,7 @@ export function BenefitsSection() {
       <SectionHeading
         align="center"
         eyebrow="Benefícios de fazer parte"
-        title={<>Coworking psicológico com <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">profissionalismo e praticidade</span></>}
+        title={<>Coworking psicológico com <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:text-white">profissionalismo e praticidade</span></>}
         description="Uma estrutura pensada para psicólogos que querem atender com qualidade, controle de agenda e menos burocracia operacional."
       />
       <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">

@@ -44,7 +44,7 @@ export function FlowSection() {
     <section id="fluxo" className="mx-auto max-w-6xl px-4 py-16 sm:px-5 md:px-8 md:py-24">
       <SectionHeading
         eyebrow="Como funciona"
-        title={<>Uma jornada pensada para <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:bg-none dark:bg-brand-yellow">evitar falhas</span></>}
+        title={<>Uma jornada pensada para <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:text-white">evitar falhas</span></>}
         description="A disponibilidade e o cadastro acontecem antes do pagamento. Assim ninguém paga por um horário que já está ocupado."
       />
       <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
