@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { AtSign, MapPin, Phone, Star } from 'lucide-react';
 import { BenefitsSection } from '../components/BenefitsSection';
+import { EconomySimulator } from '../components/EconomySimulator';
 import { FaqSection } from '../components/FaqSection';
 import { FlowSection } from '../components/FlowSection';
 import { HeroSection } from '../components/HeroSection';
@@ -42,12 +43,13 @@ export function HomePage() {
         <div>
           <SectionHeading eyebrow="Sobre o IDEIA" title={<>Um espaço feito para a psicologia <span className="rounded-md bg-title-mark px-1 text-brand-navy dark:text-white">acontecer.</span></>} description="O Instituto Ideia nasceu para resolver um problema real de quem atende: encontrar um espaço profissional, acolhedor e sem burocracia." />
           <blockquote className="mt-6 border-l-4 border-brand-yellow pl-5 font-display text-2xl font-medium leading-snug text-ink dark:text-white">Nossa missão é simples: cuidar da estrutura para que você cuide das pessoas.</blockquote>
-          <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-bold text-brand-blue dark:text-brand-sky md:justify-start">{['Região central', 'Salas equipadas', 'Reserva por hora'].map((tag) => <span key={tag} className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-4 py-2 dark:border-brand-sky/25 dark:bg-brand-sky/10">{tag}</span>)}</div>
+          <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm font-bold text-brand-blue dark:text-brand-sky md:justify-start">{['Mais de 10 anos de clínica', 'Região central', 'Salas equipadas', 'Reserva por hora'].map((tag) => <span key={tag} className="rounded-full border border-brand-blue/20 bg-brand-blue/10 px-4 py-2 dark:border-brand-sky/25 dark:bg-brand-sky/10">{tag}</span>)}</div>
         </div>
       </section>
       <BenefitsSection />
       <FlowSection />
       <PlansSection selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
+      <EconomySimulator onSelectPlan={setSelectedPlan} />
       <BookingSection selectedPlan={selectedPlan} onSelectPlan={setSelectedPlan} />
       <IncludedServices />
       <Testimonials />
