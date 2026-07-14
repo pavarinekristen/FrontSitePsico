@@ -93,6 +93,11 @@ export async function getAvailability(salaId: string, date: string): Promise<Age
   return response.data?.slots ?? [];
 }
 
+export async function getAvailabilityRange(salaId: string, startDate: string, endDate: string): Promise<Record<string, AgendaSlot[]>> {
+  const response = await apiFetch<ApiResponse<{ slots_by_date: Record<string, AgendaSlot[]> }>>(`/availability/range?sala_id=${encodeURIComponent(salaId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`);
+  return response.data?.slots_by_date ?? {};
+}
+
 export async function lockSlot(payload: LockSlotPayload): Promise<LockSlotResult> {
   const response = await apiFetch<ApiResponse<LockSlotResult>>('/reservations/lock', {
     method: 'POST',

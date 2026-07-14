@@ -1,8 +1,8 @@
-﻿import { type FormEvent, useEffect, useMemo, useState } from 'react';
+﻿import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarDays, Lock, RefreshCw, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { DadosAgendamento, HorarioSelecionado, PlanoAgendamento, ResumoAgendamento, RoomId, Sala } from '../../../types';
-import { type AgendaSlot, confirmReservation, getAvailability, lockSlot } from '../../../services/agendaApi';
+import { type AgendaSlot, confirmReservation, getAvailability, getAvailabilityRange, lockSlot } from '../../../services/agendaApi';
 import { buildBookingWhatsAppUrl, createBookingSummary } from '../../../services/whatsappService';
 import { cn } from '../../../utils/cn';
 import { getTodayInSaoPaulo } from '../../../utils/formatDate';
@@ -59,6 +59,8 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [agendaSlots, setAgendaSlots] = useState<AgendaSlot[]>([]);
   const [agendaState, setAgendaState] = useState<'idle' | 'loading' | 'online' | 'offline'>('idle');
+  const availabilityCacheRef = useRef<Record<string, AgendaSlot[]>>({});
+  const loadedMonthsRef = useRef<Set<string>>(new Set());
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ whatsapp: string | null; crp: string | null }>({ whatsapp: null, crp: null });
   const [aceiteLegal, setAceiteLegal] = useState(false);
@@ -81,23 +83,39 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
       return;
     }
 
+    const salaId = data.salaId;
+    const selectedDate = data.data;
+    const monthKey = buildMonthCacheKey(salaId, selectedDate);
+    const dayKey = buildDayCacheKey(salaId, selectedDate);
+    const cachedDay = availabilityCacheRef.current[dayKey];
+
+    if (loadedMonthsRef.current.has(monthKey)) {
+      const slots = cachedDay ?? [];
+      setAgendaSlots(slots);
+      setAgendaState('online');
+      pruneUnavailableSelections(slots);
+      return;
+    }
+
     let active = true;
     setAgendaState('loading');
 
-    getAvailability(data.salaId, data.data)
-      .then((slots) => {
+    const { startDate, endDate } = getMonthRange(selectedDate);
+    getAvailabilityRange(salaId, startDate, endDate)
+      .then((slotsByDate) => {
         if (!active) {
           return;
         }
 
+        Object.entries(slotsByDate).forEach(([date, slots]) => {
+          availabilityCacheRef.current[buildDayCacheKey(salaId, date)] = slots;
+        });
+        loadedMonthsRef.current.add(monthKey);
+
+        const slots = availabilityCacheRef.current[dayKey] ?? [];
         setAgendaSlots(slots);
         setAgendaState('online');
-        setData((current) => {
-          const availableIds = new Set(slots.filter((slot) => slot.available).map((slot) => slot.id));
-          const nextSelected = current.slotsSelecionados.filter((slot) => slot.data !== current.data || !slot.slotId || availableIds.has(slot.slotId));
-
-          return nextSelected.length === current.slotsSelecionados.length ? current : applySelectedSlots(current, nextSelected);
-        });
+        pruneUnavailableSelections(slots);
       })
       .catch(() => {
         if (!active) {
@@ -112,6 +130,20 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
       active = false;
     };
   }, [data.salaId, data.data]);
+
+  function pruneUnavailableSelections(slots: AgendaSlot[]) {
+    setData((current) => {
+      const availableIds = new Set(slots.filter((slot) => slot.available).map((slot) => slot.id));
+      const nextSelected = current.slotsSelecionados.filter((slot) => slot.data !== current.data || !slot.slotId || availableIds.has(slot.slotId));
+
+      return nextSelected.length === current.slotsSelecionados.length ? current : applySelectedSlots(current, nextSelected);
+    });
+  }
+
+  function updateCachedDay(salaId: string, date: string, slots: AgendaSlot[]) {
+    availabilityCacheRef.current[buildDayCacheKey(salaId, date)] = slots;
+    loadedMonthsRef.current.add(buildMonthCacheKey(salaId, date));
+  }
 
   function handleWhatsappChange(value: string) {
     const masked = maskPhoneBR(value);
@@ -198,7 +230,12 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
       localStorage.removeItem(PENDING_STORAGE_KEY);
 
       if (data.salaId && data.data) {
-        getAvailability(data.salaId, data.data).then(setAgendaSlots).catch(() => undefined);
+        getAvailability(data.salaId, data.data)
+          .then((slots) => {
+            updateCachedDay(data.salaId!, data.data, slots);
+            setAgendaSlots(slots);
+          })
+          .catch(() => undefined);
       }
     } catch (error) {
       setConfirmState('idle');
@@ -286,7 +323,9 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
         setFormError('Esse horário acabou de ser bloqueado. Atualize a agenda e escolha outro horário.');
         setAgendaState('loading');
         try {
-          setAgendaSlots(await getAvailability(data.salaId, data.data));
+          const refreshedSlots = await getAvailability(data.salaId, data.data);
+          updateCachedDay(data.salaId, data.data, refreshedSlots);
+          setAgendaSlots(refreshedSlots);
           setAgendaState('online');
         } catch {
           setAgendaState('offline');
@@ -646,6 +685,32 @@ function getCalendarSlots(slots: AgendaSlot[], allowLocalFallback: boolean): Cal
     available: true,
     api: false,
   }));
+}
+
+function buildDayCacheKey(salaId: string, date: string): string {
+  return `${salaId}:${date}`;
+}
+
+function buildMonthCacheKey(salaId: string, date: string): string {
+  return `${salaId}:${date.slice(0, 7)}`;
+}
+
+function getMonthRange(date: string): { startDate: string; endDate: string } {
+  const [yearText, monthText] = date.split('-');
+  const year = Number(yearText);
+  const month = Number(monthText);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+    return { startDate: date, endDate: date };
+  }
+
+  const lastDay = new Date(year, month, 0).getDate();
+  const monthValue = String(month).padStart(2, '0');
+
+  return {
+    startDate: `${year}-${monthValue}-01`,
+    endDate: `${year}-${monthValue}-${String(lastDay).padStart(2, '0')}`,
+  };
 }
 
 function formatSlotHour(value: string): string {
