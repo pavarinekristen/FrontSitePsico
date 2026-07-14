@@ -81,6 +81,7 @@ export function AdminPage() {
   const prevPendingRef = useRef<Set<string> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const soundOnRef = useRef(true);
+  const adminAgendaRequestRef = useRef(0);
   const { copiedKey, copy } = useClipboard();
 
   const load = useCallback(async (currentToken: string, date: string) => {
@@ -147,40 +148,44 @@ export function AdminPage() {
     return () => window.clearInterval(intervalId);
   }, [token, selectedDate, load]);
 
+  const loadAdminAgenda = useCallback(async (roomId: string, date: string, showLoading = false) => {
+    const requestId = ++adminAgendaRequestRef.current;
+
+    if (showLoading) {
+      setAdminAgendaLoading(true);
+    }
+    setAdminAgendaError(null);
+
+    try {
+      const slots = await getAvailability(roomId, date);
+      if (requestId !== adminAgendaRequestRef.current) {
+        return;
+      }
+      setAdminAgendaSlots(slots);
+    } catch (error) {
+      if (requestId !== adminAgendaRequestRef.current) {
+        return;
+      }
+      setAdminAgendaSlots([]);
+      setAdminAgendaError(error instanceof Error ? error.message : 'Erro ao carregar agenda.');
+    } finally {
+      if (requestId === adminAgendaRequestRef.current) {
+        setAdminAgendaLoading(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!token || !agendaSalaId) {
       setAdminAgendaSlots([]);
       return;
     }
 
-    let active = true;
-    setAdminAgendaLoading(true);
-    setAdminAgendaError(null);
+    void loadAdminAgenda(agendaSalaId, selectedDate, true);
+    const intervalId = window.setInterval(() => void loadAdminAgenda(agendaSalaId, selectedDate), REFRESH_INTERVAL_MS);
 
-    getAvailability(agendaSalaId, selectedDate)
-      .then((slots) => {
-        if (!active) {
-          return;
-        }
-        setAdminAgendaSlots(slots);
-      })
-      .catch((error) => {
-        if (!active) {
-          return;
-        }
-        setAdminAgendaSlots([]);
-        setAdminAgendaError(error instanceof Error ? error.message : 'Erro ao carregar agenda.');
-      })
-      .finally(() => {
-        if (active) {
-          setAdminAgendaLoading(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [token, agendaSalaId, selectedDate]);
+    return () => window.clearInterval(intervalId);
+  }, [token, agendaSalaId, selectedDate, loadAdminAgenda]);
 
   useEffect(() => {
     soundOnRef.current = soundOn;
@@ -239,6 +244,17 @@ export function AdminPage() {
     setDayReservations(null);
   }
 
+  async function refreshAll() {
+    if (!token) {
+      return;
+    }
+
+    await Promise.all([
+      load(token, selectedDate),
+      agendaSalaId ? loadAdminAgenda(agendaSalaId, selectedDate) : Promise.resolve(),
+    ]);
+  }
+
   function shiftDay(offset: number) {
     setSelectedDate((current) => {
       const date = new Date(`${current}T12:00:00`);
@@ -259,6 +275,7 @@ export function AdminPage() {
     try {
       await action();
       await load(token, selectedDate);
+      await loadAdminAgenda(agendaSalaId, selectedDate);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : errorFallback);
     } finally {
@@ -372,6 +389,7 @@ export function AdminPage() {
       }
       setEditingSchedule(null);
       await load(token, selectedDate);
+      await loadAdminAgenda(agendaSalaId, selectedDate);
     } catch (error) {
       setScheduleError(error instanceof Error ? error.message : 'Erro ao salvar os horários.');
     } finally {
@@ -417,6 +435,7 @@ export function AdminPage() {
       await adminUpdateReservation(token, editing.reserva_id, changes);
       setEditing(null);
       await load(token, selectedDate);
+      await loadAdminAgenda(agendaSalaId, selectedDate);
     } catch (error) {
       setEditError(error instanceof Error ? error.message : 'Erro ao salvar as alterações.');
     } finally {
@@ -459,6 +478,7 @@ export function AdminPage() {
       await adminDeleteReservations(token, ids);
       setSelectedHistory(new Set());
       await load(token, selectedDate);
+      await loadAdminAgenda(agendaSalaId, selectedDate);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Erro ao excluir do histórico.');
     } finally {
@@ -482,6 +502,7 @@ export function AdminPage() {
       await adminDeleteAllHistory(token);
       setSelectedHistory(new Set());
       await load(token, selectedDate);
+      await loadAdminAgenda(agendaSalaId, selectedDate);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Erro ao limpar o histórico.');
     } finally {
@@ -560,7 +581,7 @@ export function AdminPage() {
             >
               {soundOn ? <Bell size={15} /> : <BellOff size={15} />}
             </button>
-            <button type="button" onClick={() => void load(token, selectedDate)} className="inline-flex items-center gap-2 rounded-full border border-brand-blue/20 bg-white px-4 py-2.5 text-sm font-extrabold text-brand-blue shadow-sm transition hover:-translate-y-0.5">
+            <button type="button" onClick={() => void refreshAll()} className="inline-flex items-center gap-2 rounded-full border border-brand-blue/20 bg-white px-4 py-2.5 text-sm font-extrabold text-brand-blue shadow-sm transition hover:-translate-y-0.5">
               <RefreshCw size={15} className={cn(loading && 'animate-spin')} /> Atualizar
             </button>
             <button type="button" onClick={logout} className="inline-flex items-center gap-2 rounded-full border border-brand-blue/20 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-500 shadow-sm transition hover:-translate-y-0.5">
