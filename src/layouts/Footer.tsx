@@ -15,6 +15,9 @@ export function Footer() {
         <Link to="/politica-de-cookies" className="rounded-lg px-2 py-2.5 underline hover:text-brand-blue dark:hover:text-brand-yellow">Política de Cookies</Link>
         <button type="button" onClick={openCookiePreferences} className="rounded-lg px-2 py-2.5 font-bold underline hover:text-brand-blue dark:hover:text-brand-yellow">Preferências de cookies</button>
       </nav>
+      <p className="mt-4 border-t border-brand-blue/10 pt-4 text-center text-xs font-bold text-slate-500 dark:border-white/10 dark:text-slate-400 md:text-left">
+        Feito com ❤️ pela Sparkware
+      </p>
     </footer>
   );
 }

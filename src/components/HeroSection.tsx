@@ -71,6 +71,9 @@ export function HeroSection({ lampOn, onToggleLamp }: HeroSectionProps) {
                 </button>
               </motion.div>
             </motion.div>
+            <p className={cn('absolute bottom-3 left-1/2 w-[min(92%,260px)] -translate-x-1/2 rounded-full px-4 py-2 text-center text-xs font-extrabold shadow-sm backdrop-blur md:bottom-8 md:text-sm', lampOn ? 'bg-white/80 text-brand-blue' : 'bg-white/10 text-brand-yellow ring-1 ring-white/15')}>
+              {lampOn ? 'Quer usar no modo noturno? Clique na lâmpada.' : 'Quer voltar ao modo claro? Clique na lâmpada.'}
+            </p>
           </div>
         </div>
       </div>
