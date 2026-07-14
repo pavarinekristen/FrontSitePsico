@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, BellOff, BellRing, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
 import { type AdminReservation, type AdminReservationSlot, type AdminReservationUpdate, type AgendaSlot, adminCancelReservation, adminCancelReservationSlot, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminMarkPixReceived, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations, getAvailability } from '../services/agendaApi';
 import { shortReservaId } from '../services/whatsappService';
@@ -83,6 +83,7 @@ export function AdminPage() {
   const soundOnRef = useRef(true);
   const adminAgendaRequestRef = useRef(0);
   const { copiedKey, copy } = useClipboard();
+  const visibleAdminAgendaSlots = useMemo(() => reconcileAdminAgendaSlots(adminAgendaSlots, dayReservations ?? [], agendaSalaId), [adminAgendaSlots, dayReservations, agendaSalaId]);
 
   const load = useCallback(async (currentToken: string, date: string) => {
     setLoading(true);
@@ -721,11 +722,11 @@ export function AdminPage() {
             </div>
             {adminAgendaLoading ? (
               <p className="rounded-xl bg-brand-soft px-4 py-6 text-center text-sm font-bold text-brand-blue">Carregando agenda...</p>
-            ) : adminAgendaSlots.length === 0 ? (
+            ) : visibleAdminAgendaSlots.length === 0 ? (
               <p className="rounded-xl bg-brand-soft px-4 py-6 text-center text-sm font-bold text-slate-500">Nenhum horário gerado para essa sala nesta data.</p>
             ) : (
               <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                {adminAgendaSlots.map((slot) => (
+                {visibleAdminAgendaSlots.map((slot) => (
                   <div key={slot.id} className={cn('min-h-[70px] rounded-xl border px-3 py-2.5 text-sm font-bold', agendaSlotStyle(slot))}>
                     <div className="font-display text-lg font-semibold">{formatSlotHour(slot.inicio)} - {formatSlotHour(slot.fim)}</div>
                     <div className="mt-1 text-xs font-extrabold">{agendaSlotLabel(slot)}</div>
@@ -1076,7 +1077,55 @@ function formatPublicosAtendidos(value: string | null | undefined): string {
   return items.length > 0 ? `Público atendido: ${items.join(', ')}` : 'Público atendido não informado';
 }
 
-function agendaSlotLabel(slot: AgendaSlot): string {
+type AdminAgendaSlot = AgendaSlot & {
+  adminReservation?: AdminReservation;
+};
+
+function reconcileAdminAgendaSlots(slots: AgendaSlot[], reservations: AdminReservation[], roomId: string): AdminAgendaSlot[] {
+  const room = salas.find((sala) => sala.id === roomId);
+  const activeBySlot = new Map<string, AdminReservation>();
+
+  reservations
+    .filter((reservation) => !room || reservation.sala_numero === room.numero)
+    .filter((reservation) => reservation.status === 'lock_temporario' || reservation.status === 'confirmada')
+    .forEach((reservation) => {
+      activeSlotItems(reservation).forEach((slot) => activeBySlot.set(slot.slot_id, reservation));
+    });
+
+  return slots.map((slot) => {
+    const reservation = activeBySlot.get(slot.id);
+    if (reservation) {
+      return {
+        ...slot,
+        status: reservation.status === 'confirmada' ? 'confirmada' : 'lock_temporario',
+        available: false,
+        cliente_nome: reservation.cliente_nome,
+        cliente_crp: reservation.cliente_crp,
+        publicos_atendidos: reservation.publicos_atendidos,
+        abordagem_trabalho: reservation.abordagem_trabalho,
+        adminReservation: reservation,
+      };
+    }
+
+    if (slot.status === 'lock_temporario' || slot.status === 'confirmada') {
+      return {
+        ...slot,
+        status: 'livre',
+        available: true,
+        locked_until: null,
+        seconds_to_unlock: 0,
+        cliente_nome: null,
+        cliente_crp: null,
+        publicos_atendidos: null,
+        abordagem_trabalho: null,
+      };
+    }
+
+    return slot;
+  });
+}
+
+function agendaSlotLabel(slot: AdminAgendaSlot): string {
   const labels: Record<AgendaSlot['status'], string> = {
     livre: 'Livre',
     lock_temporario: 'Aguardando PIX',
@@ -1087,7 +1136,7 @@ function agendaSlotLabel(slot: AgendaSlot): string {
   return labels[slot.status] ?? slot.status;
 }
 
-function agendaSlotStyle(slot: AgendaSlot): string {
+function agendaSlotStyle(slot: AdminAgendaSlot): string {
   const styles: Record<AgendaSlot['status'], string> = {
     livre: 'border-green-200 bg-[#DDFBE8] text-[#147A3B]',
     lock_temporario: 'border-yellow-200 bg-[#FFF4D6] text-[#8A6100]',
