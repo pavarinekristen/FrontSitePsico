@@ -57,6 +57,8 @@ export interface AdminReservation {
   publicos_atendidos: string | null;
   abordagem_trabalho: string | null;
   status: string;
+  payment_status?: 'aguardando_pix' | 'pix_recebido' | 'nao_aplicavel';
+  pix_received_at?: string | null;
   confirm_code?: string | null;
   locked_until?: string | null;
   seconds_to_expire?: number | null;
@@ -176,6 +178,14 @@ export async function getAdminDayReservations(adminToken: string, date: string):
 
 export async function adminConfirmReservation(adminToken: string, reservaId: string): Promise<void> {
   await apiFetch<ApiResponse<{ confirmed: boolean }>>('/admin/reservations/confirm-by-id', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${adminToken}` },
+    body: JSON.stringify({ reserva_id: reservaId }),
+  });
+}
+
+export async function adminMarkPixReceived(adminToken: string, reservaId: string): Promise<void> {
+  await apiFetch<ApiResponse<{ payment_status: 'pix_recebido' }>>('/admin/reservations/pix-received', {
     method: 'POST',
     headers: { Authorization: `Bearer ${adminToken}` },
     body: JSON.stringify({ reserva_id: reservaId }),

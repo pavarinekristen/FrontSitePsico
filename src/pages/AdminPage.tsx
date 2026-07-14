@@ -1,6 +1,6 @@
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, BellOff, BellRing, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
-import { type AdminReservation, type AdminReservationSlot, type AdminReservationUpdate, type AgendaSlot, adminCancelReservation, adminCancelReservationSlot, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations, getAvailability } from '../services/agendaApi';
+import { type AdminReservation, type AdminReservationSlot, type AdminReservationUpdate, type AgendaSlot, adminCancelReservation, adminCancelReservationSlot, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminMarkPixReceived, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations, getAvailability } from '../services/agendaApi';
 import { shortReservaId } from '../services/whatsappService';
 import { planosDisponiveis, salas } from '../features/agendamento/data/rooms';
 import { useClipboard } from '../hooks/useClipboard';
@@ -278,6 +278,20 @@ export function AdminPage() {
     }
 
     void runAction(reservation, () => adminConfirmReservation(token, reservation.reserva_id), 'Erro ao confirmar manualmente.');
+  }
+
+  function markPixReceived(reservation: AdminReservation) {
+    if (!token) {
+      return;
+    }
+
+    const label = `${reservation.cliente_nome || 'Sem nome'} - ${reservation.sala_numero} - ${formatReservationPeriod(reservation)}`;
+
+    if (!window.confirm(`Marcar PIX recebido para ${label}?\n\nIsso nao confirma a reserva sozinho; apenas registra o pagamento no painel.`)) {
+      return;
+    }
+
+    void runAction(reservation, () => adminMarkPixReceived(token, reservation.reserva_id), 'Erro ao marcar PIX recebido.');
   }
 
   function cancelReservation(reservation: AdminReservation) {
@@ -576,6 +590,11 @@ export function AdminPage() {
                       WhatsApp: {reservation.cliente_whatsapp || 'não informado'} · CRP: {reservation.cliente_crp || 'não informado'} · {formatPublicosAtendidos(reservation.publicos_atendidos)} · {reservation.abordagem_trabalho || 'abordagem não informada'} · {reservation.plano} · {formatDurationSlots(reservation.duration_slots)}
                     </p>
                     <ReservationSlotList reservation={reservation} />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span className={cn('inline-flex rounded-full px-3 py-1 text-xs font-extrabold', reservation.payment_status === 'pix_recebido' ? 'bg-[#DDFBE8] text-[#147A3B]' : 'bg-slate-100 text-slate-600')}>
+                        {reservation.payment_status === 'pix_recebido' ? 'PIX recebido' : 'Aguardando PIX'}
+                      </span>
+                    </div>
                     <p className="mt-2 inline-flex rounded-full bg-[#FFF4D6] px-3 py-1 text-xs font-extrabold text-[#8A6100]">⏱ Expira em {formatRemaining(reservation.seconds_to_expire ?? 0)}</p>
                   </div>
                   <div className="text-right">
@@ -587,6 +606,14 @@ export function AdminPage() {
                       className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-yellow px-4 py-2 text-xs font-extrabold text-ink shadow-yellow transition hover:-translate-y-0.5"
                     >
                       <Copy size={13} /> {copiedKey === reservation.reserva_id ? 'Copiado!' : 'Copiar código'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busyId !== null || reservation.payment_status === 'pix_recebido'}
+                      onClick={() => markPixReceived(reservation)}
+                      className="mt-2 ml-2 inline-flex items-center gap-1.5 rounded-full border border-[#147A3B]/20 bg-[#DDFBE8] px-4 py-2 text-xs font-extrabold text-[#147A3B] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <ShieldCheck size={13} /> {reservation.payment_status === 'pix_recebido' ? 'PIX recebido' : 'Marcar PIX'}
                     </button>
                     <button
                       type="button"
