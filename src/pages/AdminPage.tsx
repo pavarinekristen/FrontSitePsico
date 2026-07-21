@@ -1,6 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, BellOff, BellRing, CalendarDays, CheckCheck, ChevronLeft, ChevronRight, Copy, KeyRound, LogOut, Pencil, RefreshCw, Search, ShieldCheck, Trash2, X } from 'lucide-react';
 import { type AdminReservation, type AdminReservationSlot, type AdminReservationUpdate, type AgendaSlot, adminCancelReservation, adminCancelReservationSlot, adminConfirmReservation, adminDeleteAllHistory, adminDeleteReservations, adminLogin, adminMarkPixReceived, adminUpdateReservation, getAdminDayReservations, getAdminHistory, getAdminReservations, getAvailability } from '../services/agendaApi';
+import { ArticleAdminPanel } from '../features/artigos/components/ArticleAdminPanel';
 import { shortReservaId } from '../services/whatsappService';
 import { planosDisponiveis, salas } from '../features/agendamento/data/rooms';
 import { useClipboard } from '../hooks/useClipboard';
@@ -918,6 +919,8 @@ export function AdminPage() {
           </div>
           {historyBusy ? <p className="mt-2 text-xs font-bold text-slate-500">Processando...</p> : null}
         </section>
+
+        <ArticleAdminPanel adminToken={token} />
       </div>
 
       {editing ? (

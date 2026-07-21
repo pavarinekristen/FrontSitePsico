@@ -22,6 +22,7 @@ const initialData: DadosAgendamento = { salaId: null, slotId: null, slotIds: [],
 const PUBLICOS_ATENDIDOS = ['Adulto', 'Criança', 'Adolescente'] as const;
 
 const PENDING_STORAGE_KEY = 'ideia-reserva-pendente';
+const AGENDA_REFRESH_INTERVAL_MS = 15000;
 
 function loadPendingSummary(): ResumoAgendamento | null {
   try {
@@ -61,12 +62,19 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
   const [agendaState, setAgendaState] = useState<'idle' | 'loading' | 'online' | 'offline'>('idle');
   const availabilityCacheRef = useRef<Record<string, AgendaSlot[]>>({});
   const loadedMonthsRef = useRef<Set<string>>(new Set());
+  const agendaDayRequestRef = useRef(0);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ whatsapp: string | null; crp: string | null }>({ whatsapp: null, crp: null });
   const [aceiteLegal, setAceiteLegal] = useState(false);
   const selectedSala = useMemo(() => salas.find((sala) => sala.id === data.salaId), [data.salaId, salas]);
   const regraPlano = getRegraPlano(data.plano);
   const calendarSlots = useMemo(() => getCalendarSlots(agendaSlots, agendaState !== 'online'), [agendaSlots, agendaState]);
+  const selectedDateHighlights = useMemo(() => {
+    return data.slotsSelecionados.reduce<Record<string, number>>((dates, slot) => {
+      dates[slot.data] = (dates[slot.data] ?? 0) + 1;
+      return dates;
+    }, {});
+  }, [data.slotsSelecionados]);
 
   useEffect(() => setData((current) => (selectedSalaId === current.salaId ? { ...current, salaId: selectedSalaId } : applySelectedSlots({ ...current, salaId: selectedSalaId }, []))), [selectedSalaId]);
   useEffect(() => {
@@ -94,6 +102,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
       setAgendaSlots(slots);
       setAgendaState('online');
       pruneUnavailableSelections(slots);
+      void refreshAgendaDay(salaId, selectedDate);
       return;
     }
 
@@ -130,6 +139,45 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
       active = false;
     };
   }, [data.salaId, data.data]);
+
+  useEffect(() => {
+    if (!data.salaId || !data.data || agendaState === 'offline') {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      void refreshAgendaDay(data.salaId!, data.data);
+    }, AGENDA_REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [data.salaId, data.data, agendaState]);
+
+  async function refreshAgendaDay(salaId: string, date: string, showLoading = false) {
+    const requestId = ++agendaDayRequestRef.current;
+
+    if (showLoading) {
+      setAgendaState('loading');
+    }
+
+    try {
+      const slots = await getAvailability(salaId, date);
+      if (requestId !== agendaDayRequestRef.current) {
+        return;
+      }
+
+      updateCachedDay(salaId, date, slots);
+      setAgendaSlots(slots);
+      setAgendaState('online');
+      pruneUnavailableSelections(slots);
+    } catch {
+      if (requestId !== agendaDayRequestRef.current || !showLoading) {
+        return;
+      }
+
+      setAgendaSlots([]);
+      setAgendaState('offline');
+    }
+  }
 
   function pruneUnavailableSelections(slots: AgendaSlot[]) {
     setData((current) => {
@@ -460,7 +508,7 @@ export function BookingForm({ salas, selectedSalaId, selectedPlan, onSelectPlan,
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-[minmax(0,280px)_1fr]">
-              <AgendaCalendar selectedDate={data.data} onSelectDate={selectDate} />
+              <AgendaCalendar selectedDate={data.data} highlightedDates={selectedDateHighlights} onSelectDate={selectDate} />
               <div className="flex flex-col">
                 <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
                   {calendarSlots.map((slot) => {

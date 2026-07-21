@@ -9,6 +9,7 @@ import { IncludedServices } from '../components/IncludedServices';
 import { PlansSection } from '../components/PlansSection';
 import { SectionHeading } from '../components/SectionHeading';
 import { Testimonials } from '../components/Testimonials';
+import { ArticlesPreview } from '../features/artigos/components/ArticlesPreview';
 import { BookingSection } from '../features/agendamento/components/BookingSection';
 import { useClipboard } from '../hooks/useClipboard';
 import { MainLayout } from '../layouts/MainLayout';
@@ -54,6 +55,7 @@ export function HomePage() {
       <IncludedServices />
       <Testimonials />
       <FaqSection />
+      <ArticlesPreview />
       <section id="contato" className="mx-auto max-w-6xl px-4 py-16 sm:px-5 md:px-8 md:py-24">
         <div className="relative overflow-hidden rounded-[34px] text-white shadow-hero transition duration-300 hover:scale-[1.01]">
           <iframe

@@ -5,12 +5,13 @@ import { getTodayInSaoPaulo } from '../../../utils/formatDate';
 
 interface AgendaCalendarProps {
   selectedDate: string;
+  highlightedDates?: Record<string, number>;
   onSelectDate: (date: string) => void;
 }
 
 const weekDayLabels = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
-export function AgendaCalendar({ selectedDate, onSelectDate }: AgendaCalendarProps) {
+export function AgendaCalendar({ selectedDate, highlightedDates = {}, onSelectDate }: AgendaCalendarProps) {
   const today = getTodayInSaoPaulo();
   const [view, setView] = useState(() => toMonthView(selectedDate || today));
 
@@ -71,6 +72,8 @@ export function AgendaCalendar({ selectedDate, onSelectDate }: AgendaCalendarPro
           const disabled = day < today;
           const selected = day === selectedDate;
           const isToday = day === today;
+          const selectedCount = highlightedDates[day] ?? 0;
+          const highlighted = selectedCount > 0;
 
           return (
             <button
@@ -81,14 +84,21 @@ export function AgendaCalendar({ selectedDate, onSelectDate }: AgendaCalendarPro
               aria-pressed={selected}
               aria-label={`Selecionar dia ${day.slice(8, 10)}`}
               className={cn(
-                'grid h-9 place-items-center rounded-lg text-xs font-bold transition',
+                'relative grid h-9 place-items-center rounded-lg text-xs font-bold transition',
                 selected && 'bg-brand-blue text-white shadow-brand',
-                !selected && !disabled && 'text-brand-blue hover:bg-brand-soft dark:text-brand-sky dark:hover:bg-night-soft',
+                !selected && highlighted && !disabled && 'bg-white text-brand-blue ring-2 ring-inset ring-brand-yellow shadow-[0_0_0_3px_rgba(250,204,21,0.22)] dark:bg-night-card dark:text-brand-sky',
+                !selected && !highlighted && !disabled && 'text-brand-blue hover:bg-brand-soft dark:text-brand-sky dark:hover:bg-night-soft',
                 !selected && isToday && 'ring-1 ring-inset ring-brand-yellow',
+                selected && highlighted && 'ring-2 ring-inset ring-brand-yellow',
                 disabled && 'cursor-not-allowed text-slate-300 dark:text-slate-600',
               )}
             >
-              {Number(day.slice(8, 10))}
+              <span>{Number(day.slice(8, 10))}</span>
+              {highlighted ? (
+                <span className={cn('absolute right-0.5 top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full px-0.5 text-[9px] leading-none', selected ? 'bg-brand-yellow text-ink' : 'bg-brand-blue text-white dark:bg-brand-sky dark:text-ink')}>
+                  {selectedCount}
+                </span>
+              ) : null}
             </button>
           );
         })}

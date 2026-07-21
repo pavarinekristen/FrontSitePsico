@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { ArticleDetailPage } from './pages/ArticleDetailPage';
+import { ArticlesPage } from './pages/ArticlesPage';
 import { AdminPage } from './pages/AdminPage';
 import { HomePage } from './pages/HomePage';
 import { PoliticaDeCookiesPage } from './pages/PoliticaDeCookiesPage';
@@ -33,6 +35,8 @@ export default function App() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/artigos" element={<ArticlesPage />} />
+        <Route path="/artigos/:slug" element={<ArticleDetailPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/termos-de-uso" element={<TermosDeUsoPage />} />
         <Route path="/politica-de-privacidade" element={<PoliticaDePrivacidadePage />} />

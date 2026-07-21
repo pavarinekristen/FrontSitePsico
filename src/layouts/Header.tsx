@@ -3,12 +3,13 @@ import { Menu, X } from 'lucide-react';
 import logo from '../assets/images/logo-ideia.png';
 
 const navItems = [
-  { href: '#inicio', label: 'Início' },
-  { href: '#sobre', label: 'Sobre o IDEIA' },
-  { href: '#fluxo', label: 'Fluxo' },
-  { href: '#planos', label: 'Planos' },
-  { href: '#salas', label: 'Salas' },
-  { href: '#contato', label: 'Contato' },
+  { href: '/#inicio', label: 'Início' },
+  { href: '/#sobre', label: 'Sobre o IDEIA' },
+  { href: '/#fluxo', label: 'Fluxo' },
+  { href: '/#planos', label: 'Planos' },
+  { href: '/#salas', label: 'Salas' },
+  { href: '/artigos', label: 'Artigos' },
+  { href: '/#contato', label: 'Contato' },
 ];
 
 const WHATSAPP_URL = 'https://wa.me/553499710952';
@@ -27,7 +28,7 @@ export function Header() {
   return (
     <header className="sticky top-3 z-50 mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-6xl rounded-[18px] border border-brand-blue/15 bg-white/75 px-4 py-3 shadow-nav backdrop-blur transition-colors duration-500 dark:border-white/10 dark:bg-night-card/85 sm:w-[calc(100%-2rem)] md:px-5">
       <div className="flex items-center justify-between gap-3">
-        <a href="#inicio" aria-label="Instituto Ideia" className="shrink-0"><img src={logo} alt="Instituto Ideia" className="h-10 w-auto rounded-lg bg-white px-2 py-1 shadow-sm md:h-11" /></a>
+        <a href="/#inicio" aria-label="Instituto Ideia" className="shrink-0"><img src={logo} alt="Instituto Ideia" className="h-10 w-auto rounded-lg bg-white px-2 py-1 shadow-sm md:h-11" /></a>
         <nav className="hidden items-center gap-4 text-sm font-bold text-slate-600 dark:text-slate-300 md:flex">{navItems.map((item) => <a key={item.href} href={item.href} className="transition hover:text-brand-blue dark:hover:text-brand-yellow">{item.label}</a>)}</nav>
         <div className="flex items-center gap-2">
           <a
@@ -40,7 +41,7 @@ export function Header() {
           >
             <WhatsAppIcon size={19} />
           </a>
-          <a href="#salas" className="rounded-full bg-brand-yellow px-4 py-3 text-sm font-extrabold text-ink shadow-yellow transition hover:-translate-y-0.5">Ver horários</a>
+          <a href="/#salas" className="rounded-full bg-brand-yellow px-4 py-3 text-sm font-extrabold text-ink shadow-yellow transition hover:-translate-y-0.5">Ver horários</a>
           <button
             type="button"
             onClick={() => setOpen((current) => !current)}
